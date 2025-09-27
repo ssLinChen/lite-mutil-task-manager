@@ -2,13 +2,56 @@
 chcp 65001 >nul
 setlocal enabledelayedexpansion
 
+:: 加载配置文件
+call :load_config
+if %errorlevel% neq 0 (
+    echo [WARNING] 使用默认配置继续执行
+    echo [WARNING] Continuing with default settings
+)
+
 echo ========================================
-echo [tutu] Git项目推送脚本 v1.0
-echo [tutu] Git Project Push Script v1.0
+echo [tutu] Git项目推送脚本 v2.0 (配置驱动)
+echo [tutu] Git Project Push Script v2.0 (Config-driven)
 echo ========================================
 
 :: 设置项目根目录
 set "PROJECT_ROOT=%~dp0"
+
+:: 配置参数默认值
+if not defined REMOTE_URL set "REMOTE_URL="
+if not defined USER_NAME set "USER_NAME=Git User"
+if not defined USER_EMAIL set "USER_EMAIL=user@example.com"
+if not defined DEFAULT_BRANCH set "DEFAULT_BRANCH=main"
+if not defined AUTO_COMMIT set "AUTO_COMMIT=true"
+if not defined COMMIT_MSG set "COMMIT_MSG=Auto-commit at {timestamp}"
+
+goto :main
+
+:load_config
+    if not exist "gitConfig.json" (
+        echo [INFO] 未找到配置文件 gitConfig.json
+        echo [INFO] Config file gitConfig.json not found
+        exit /b 1
+    )
+
+    :: 使用jq解析JSON (需安装)
+    where jq >nul 2>&1
+    if %errorlevel% equ 0 (
+        for /f "delims=" %%i in ('jq -r ".remoteUrl" gitConfig.json') do set "REMOTE_URL=%%i"
+        for /f "delims=" %%i in ('jq -r ".user.name" gitConfig.json') do set "USER_NAME=%%i"
+        for /f "delims=" %%i in ('jq -r ".user.email" gitConfig.json') do set "USER_EMAIL=%%i"
+        for /f "delims=" %%i in ('jq -r ".branch.default" gitConfig.json') do set "DEFAULT_BRANCH=%%i"
+    ) else (
+        :: 简单解析 (无jq时)
+        for /f "tokens=2 delims=:," %%i in ('findstr "\"remoteUrl\"" gitConfig.json') do (
+            set "REMOTE_URL=%%i"
+            set "REMOTE_URL=!REMOTE_URL:"=!"
+            set "REMOTE_URL=!REMOTE_URL: =!"
+        )
+    )
+    exit /b 0
+
+:main
 cd /d "%PROJECT_ROOT%" || (
     echo [ERROR] 无法进入项目目录: %PROJECT_ROOT%
     echo [ERROR] Cannot enter project directory: %PROJECT_ROOT%
@@ -74,19 +117,28 @@ exit /b 0
     :: 配置用户信息（如果未配置）
     git config user.name >nul 2>&1
     if %errorlevel% neq 0 (
-        echo [INFO] 配置默认用户信息...
-        echo [INFO] Configuring default user info...
-        git config user.name "Git User"
-        git config user.email "user@example.com"
-        echo [提示] 请使用以下命令配置您的用户信息：
-        echo [Hint] Please configure your user info with:
-        echo   git config user.name "您的姓名"
-        echo   git config user.email "您的邮箱"
+        echo [INFO] 配置用户信息...
+        echo [INFO] Configuring user info...
+        git config user.name "!USER_NAME!"
+        git config user.email "!USER_EMAIL!"
+        echo [提示] 当前使用配置的用户信息:
+        echo [Hint] Current user info from config:
+        echo   姓名: !USER_NAME!
+        echo   Name: !USER_NAME!
+        echo   邮箱: !USER_EMAIL!
+        echo   Email: !USER_EMAIL!
     )
     
     :: 添加文件并提交
     git add .
-    git commit -m "初始提交 - 项目初始化 [%date% %time%]"
+    
+    :: 生成提交信息
+    set "TIMESTAMP=%date% %time%"
+    set "COMMIT_MSG=!COMMIT_MSG:{timestamp}=!TIMESTAMP!"
+    
+    echo [INFO] 使用提交信息: !COMMIT_MSG!
+    echo [INFO] Using commit message: !COMMIT_MSG!
+    git commit -m "!COMMIT_MSG!"
     if %errorlevel% neq 0 (
         echo [ERROR] 初始提交失败
         echo [ERROR] Initial commit failed
@@ -95,15 +147,16 @@ exit /b 0
     echo [OK] 初始提交完成
     echo [OK] Initial commit completed
     
-    :: 获取远程仓库信息
-    set /p "REMOTE_URL=请输入远程Git仓库URL（如 git@github.com:username/repo.git）: "
+    :: 检查远程仓库配置
     if "!REMOTE_URL!"=="" (
-        echo [INFO] 未提供远程仓库URL，跳过推送
-        echo [INFO] No remote URL provided, skipping push
+        echo [INFO] 未配置远程仓库URL，跳过推送
+        echo [INFO] No remote URL configured, skipping push
         goto :eof
     )
     
     :: 添加远程仓库
+    echo [INFO] 配置远程仓库: !REMOTE_URL!
+    echo [INFO] Configuring remote repository: !REMOTE_URL!
     git remote add origin "!REMOTE_URL!"
     if %errorlevel% neq 0 (
         echo [ERROR] 添加远程仓库失败
