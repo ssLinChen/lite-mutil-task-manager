@@ -300,3 +300,61 @@ hint: Please, commit your changes before merging.
 fatal: Exiting because of unfinished merge.'
 2025-09-28 01:46:15,365 - INFO: 等待 2 秒后重试...
 2025-09-28 01:46:17,372 - INFO: Git身份设置为: tutu <y80200156@mail.ecust.edu.cn>
+2025-09-28 01:46:17,445 - INFO: 已添加所有更改到暂存区
+2025-09-28 01:46:17,529 - INFO: 已提交更改: Auto-commit at 2025-09-28 01:46:17
+2025-09-28 01:46:17,530 - INFO: 远程仓库URL已正确设置: git@github.com:ssLinChen/lite-mutil-task-manager.git
+2025-09-28 01:46:17,531 - INFO: 使用分支: main
+2025-09-28 01:46:17,570 - INFO: 本地分支 main 已存在
+2025-09-28 01:46:17,570 - INFO: 拉取远程仓库更改...
+2025-09-28 01:46:21,623 - INFO: 远程分支 main 存在，执行拉取操作
+2025-09-28 01:46:21,657 - WARNING: 拉取远程更改时出错: Cmd('git') failed due to: exit code(128)
+  cmdline: git pull origin main --no-rebase
+  stderr: 'error: You have not concluded your merge (MERGE_HEAD exists).
+hint: Please, commit your changes before merging.
+fatal: Exiting because of unfinished merge.'
+2025-09-28 01:46:21,657 - WARNING: 尝试 2/3 失败: Cmd('git') failed due to: exit code(128)
+  cmdline: git pull origin main --no-rebase
+  stderr: 'error: You have not concluded your merge (MERGE_HEAD exists).
+hint: Please, commit your changes before merging.
+fatal: Exiting because of unfinished merge.'
+2025-09-28 01:46:21,657 - INFO: 等待 4 秒后重试...
+2025-09-28 01:46:25,662 - INFO: Git身份设置为: tutu <y80200156@mail.ecust.edu.cn>
+2025-09-28 01:46:25,742 - INFO: 已添加所有更改到暂存区
+2025-09-28 01:46:25,826 - INFO: 已提交更改: Auto-commit at 2025-09-28 01:46:25
+2025-09-28 01:46:25,827 - INFO: 远程仓库URL已正确设置: git@github.com:ssLinChen/lite-mutil-task-manager.git
+2025-09-28 01:46:25,827 - INFO: 使用分支: main
+2025-09-28 01:46:25,869 - INFO: 本地分支 main 已存在
+2025-09-28 01:46:25,869 - INFO: 拉取远程仓库更改...
+2025-09-28 01:46:30,541 - INFO: 远程分支 main 存在，执行拉取操作
+2025-09-28 01:46:30,572 - WARNING: 拉取远程更改时出错: Cmd('git') failed due to: exit code(128)
+  cmdline: git pull origin main --no-rebase
+  stderr: 'error: You have not concluded your merge (MERGE_HEAD exists).
+hint: Please, commit your changes before merging.
+fatal: Exiting because of unfinished merge.'
+2025-09-28 01:46:30,572 - WARNING: 尝试 3/3 失败: Cmd('git') failed due to: exit code(128)
+  cmdline: git pull origin main --no-rebase
+  stderr: 'error: You have not concluded your merge (MERGE_HEAD exists).
+hint: Please, commit your changes before merging.
+fatal: Exiting because of unfinished merge.'
+2025-09-28 01:46:30,572 - ERROR: 达到最大重试次数，同步最终失败
+2025-09-28 01:46:30,573 - ERROR: 错误详情
+Traceback (most recent call last):
+  File "C:\Users\10129\CodeBuddy\lite-mutil-task-manager\utils\github_sync.py", line 273, in <module>
+    syncer.sync()
+    ~~~~~~~~~~~^^
+  File "C:\Users\10129\CodeBuddy\lite-mutil-task-manager\utils\github_sync.py", line 197, in sync
+    self.repo.git.pull('origin', branch_name, '--no-rebase')
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\site-packages\git\cmd.py", line 1003, in <lambda>
+    return lambda *args, **kwargs: self._call_process(name, *args, **kwargs)
+                                   ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\site-packages\git\cmd.py", line 1616, in _call_process
+    return self.execute(call, **exec_kwargs)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\site-packages\git\cmd.py", line 1406, in execute
+    raise GitCommandError(redacted_command, status, stderr_value, stdout_value)
+git.exc.GitCommandError: Cmd('git') failed due to: exit code(128)
+  cmdline: git pull origin main --no-rebase
+  stderr: 'error: You have not concluded your merge (MERGE_HEAD exists).
+hint: Please, commit your changes before merging.
+fatal: Exiting because of unfinished merge.'
