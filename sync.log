@@ -272,3 +272,12 @@ fatal: Exiting because of unfinished merge.'
 2025-09-28 01:41:29,967 - ERROR: 配置加载失败: [Errno 2] No such file or directory: 'git_config.json'
 2025-09-28 01:43:11,118 - ERROR: 配置加载失败: [Errno 2] No such file or directory: 'git_config.json'
 2025-09-28 01:43:34,534 - ERROR: 配置加载失败: [Errno 2] No such file or directory: 'git_config.json'
+2025-09-28 01:45:54,926 - INFO: Git仓库初始化成功
+2025-09-28 01:45:54,926 - INFO: 配置的远程仓库URL: git@github.com:ssLinChen/lite-mutil-task-manager.git
+2025-09-28 01:45:54,926 - INFO: 测试SSH连接到: github.com
+2025-09-28 01:45:58,672 - INFO: SSH连接测试成功: github.com
+2025-09-28 01:45:58,672 - INFO: 检查仓库是否存在: ssLinChen/lite-mutil-task-manager 在 github.com
+2025-09-28 01:46:09,737 - WARNING: 检查仓库存在性异常: Command '['git', 'ls-remote', 'git@github.com:ssLinChen/lite-mutil-task-manager.git', 'HEAD']' timed out after 10 seconds
+2025-09-28 01:46:09,738 - WARNING: 远程仓库不存在或无法访问
+2025-09-28 01:46:09,738 - INFO: 请确认仓库URL是否正确，并且您有权限访问该仓库
+2025-09-28 01:46:09,743 - INFO: Git身份设置为: tutu <y80200156@mail.ecust.edu.cn>
