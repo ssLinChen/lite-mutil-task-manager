@@ -244,3 +244,31 @@ Automatic merge failed; fix conflicts and then commit the result.'
 2025-09-27 23:38:10,044 - INFO: 开始推送到远程仓库...
 2025-09-27 23:38:10,044 - WARNING: 使用强制推送选项
 2025-09-27 23:38:14,833 - INFO: 同步成功完成
+2025-09-27 23:43:49,841 - INFO: Git仓库初始化成功
+2025-09-27 23:43:49,842 - INFO: 配置的远程仓库URL: git@github.com:ssLinChen/lite-mutil-task-manager.git
+2025-09-27 23:43:49,842 - INFO: 测试SSH连接到: github.com
+2025-09-27 23:43:53,301 - INFO: SSH连接测试成功: github.com
+2025-09-27 23:43:53,301 - INFO: 检查仓库是否存在: ssLinChen/lite-mutil-task-manager 在 github.com
+2025-09-27 23:44:06,342 - WARNING: 检查仓库存在性异常: Command '['git', 'ls-remote', 'git@github.com:ssLinChen/lite-mutil-task-manager.git', 'HEAD']' timed out after 10 seconds
+2025-09-27 23:44:06,343 - WARNING: 远程仓库不存在或无法访问
+2025-09-27 23:44:06,344 - INFO: 请确认仓库URL是否正确，并且您有权限访问该仓库
+2025-09-27 23:44:06,350 - INFO: Git身份设置为: tutu <y80200156@mail.ecust.edu.cn>
+2025-09-27 23:44:06,381 - INFO: 已添加所有更改到暂存区
+2025-09-27 23:44:06,485 - INFO: 已提交更改: Auto-commit at 2025-09-27 23:44:06
+2025-09-27 23:44:06,486 - INFO: 远程仓库URL已正确设置: git@github.com:ssLinChen/lite-mutil-task-manager.git
+2025-09-27 23:44:06,487 - INFO: 使用分支: main
+2025-09-27 23:44:06,514 - INFO: 本地分支 main 已存在
+2025-09-27 23:44:06,514 - INFO: 拉取远程仓库更改...
+2025-09-27 23:44:21,456 - INFO: 远程分支 main 存在，执行拉取操作
+2025-09-27 23:44:21,494 - WARNING: 拉取远程更改时出错: Cmd('git') failed due to: exit code(128)
+  cmdline: git pull origin main --no-rebase
+  stderr: 'error: You have not concluded your merge (MERGE_HEAD exists).
+hint: Please, commit your changes before merging.
+fatal: Exiting because of unfinished merge.'
+2025-09-27 23:44:21,494 - WARNING: 将尝试强制推送
+2025-09-27 23:44:21,494 - INFO: 开始推送到远程仓库...
+2025-09-27 23:44:21,495 - WARNING: 使用强制推送选项
+2025-09-27 23:44:29,865 - INFO: 同步成功完成
+2025-09-28 01:41:29,967 - ERROR: 配置加载失败: [Errno 2] No such file or directory: 'git_config.json'
+2025-09-28 01:43:11,118 - ERROR: 配置加载失败: [Errno 2] No such file or directory: 'git_config.json'
+2025-09-28 01:43:34,534 - ERROR: 配置加载失败: [Errno 2] No such file or directory: 'git_config.json'

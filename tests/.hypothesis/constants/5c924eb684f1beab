@@ -1,0 +1,4 @@
+# file: C:\Users\10129\CodeBuddy\MutilTask\mutil_task\utils\event_bus.py
+# hypothesis_version: 6.138.15
+
+['task_cancelled', 'task_completed', 'task_created', 'task_failed', 'task_progress', 'task_status_changed']

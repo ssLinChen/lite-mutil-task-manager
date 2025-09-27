@@ -1,27 +1,25 @@
 {
   "remote": {
-    "url": "git@github.com:ssLinChen/lite-mutil-task-manager.git",
-    "defaultBranch": "main"
+    "url": "git@github.com:ssLinChen/lite-mutil-task-manager.git"
   },
   "user": {
     "name": "tutu",
     "email": "y80200156@mail.ecust.edu.cn"
   },
+  "commit": {
+    "messageTemplate": "Auto-commit at {timestamp}",
+    "includeTimestamp": true,
+    "autoAdd": true
+  },
   "branch": {
     "default": "main",
     "createOnPush": true
   },
-  "commit": {
-    "autoAdd": true,
-    "messageTemplate": "Auto-commit at {timestamp}",
-    "includeTimestamp": true
-  },
-  "conflict": {
-    "forcePush": true,
-    "strategy": "ours"
-  },
   "errorHandling": {
     "retryCount": 3,
     "showDetails": true
+  },
+  "conflict": {
+    "forcePush": false
   }
 }

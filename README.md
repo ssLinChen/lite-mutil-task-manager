@@ -1,40 +1,37 @@
 # lite-mutil-task-manager
-一款轻量级多任务管理系统
->>>>>>> 152f03afb5cead20ce9c07c5af159109759d0abd
-=======
-# lite-mutil-task-manager
 
 🚀 轻量级多任务管理系统 - 基于Python的高效任务调度和执行框架
 
 ## 项目简介
 
-`lite-mutil-task-manager` 是一个现代化的轻量级多任务管理系统，专注于提供高效、可靠的任务调度和执行能力。项目采用模块化设计，支持多种任务类型和基于优先级的智能调度策略。
+`lite-mutil-task-manager` 是一个现代化的轻量级多任务管理系统，专注于提供高效、可靠的任务调度和执行能力。项目采用模块化设计和事件驱动架构，支持多种任务类型和基于优先级的智能调度策略。
 
 ## ✨ 核心特性
 
-- **🎯 智能优先级调度** - 支持CRITICAL/HIGH/NORMAL/LOW四级优先级
-- **⚡ 多线程并发执行** - 可配置的线程池管理
-- **📊 实时状态监控** - 丰富的任务状态跟踪和进度显示
-- **🛡️ 健壮的错误处理** - 自动重试和异常恢复机制
-- **🎨 可视化界面** - 基于Rich库的实时任务监控面板
+- **🎯 智能优先级调度** - 支持CRITICAL/HIGH/NORMAL/LOW四级优先级（数值越小优先级越高）
+- **⚡ 多线程并发执行** - 基于ThreadPoolExecutor的可配置线程池
+- **📊 实时状态监控** - 完整的任务生命周期跟踪和进度显示
+- **📝 详细结果记录** - 全面的任务执行结果和产物管理
+- **🛡️ 健壮的错误处理** - 自动重试机制和结构化错误记录
 - **🔧 配置化任务** - 支持参数验证和约束检查的任务配置系统
 - **📡 事件驱动架构** - 基于发布-订阅模式的状态变更通知
+- **🔒 线程安全设计** - 关键操作使用锁机制保证线程安全
 
 ## 🛠️ 技术栈
 
 - **编程语言**: Python 3.8+
 - **数据验证**: Pydantic v2
 - **并发处理**: ThreadPoolExecutor
-- **可视化**: Rich库
 - **任务队列**: 基于heapq的优先级队列
 - **事件系统**: 自定义事件总线
+- **线程同步**: threading.Lock
+- **结果管理**: 结构化结果存储和产物引用
 
 ## 🚀 快速开始
 
 ### 环境要求
 
 - Python 3.8 或更高版本
-- Git
 
 ### 安装步骤
 
@@ -57,45 +54,52 @@ python examples/task_queue_mvp.py
 ### 基本使用
 
 ```python
-from app.backend.models.core.task import Task, TaskPriority
-from app.backend.models.queue.task_queue import TaskQueue
+from mutil_task.core.task import Task, TaskPriority
+from mutil_task.queue.task_queue import TaskQueue
+from mutil_task.core.task_result import TaskResult
 
 # 创建任务队列（最大2个并发工作线程）
 queue = TaskQueue(max_workers=2)
 
 # 创建任务
-task1 = Task(title="高优先级任务", priority=TaskPriority.HIGH)
-task2 = Task(title="普通任务", priority=TaskPriority.NORMAL)
+task = Task(title="数据处理任务", priority=TaskPriority.HIGH)
 
 # 添加任务到队列
-queue.enqueue(task1)
-queue.enqueue(task2)
+queue.enqueue(task)
 
-# 任务会自动开始执行
+# 获取任务结果
+result = TaskResult(
+    task_id=task.id,
+    execution_id="exec_001",
+    status="completed"
+)
+result.add_metric("duration", 120.5)
+print(f"任务完成，耗时: {result.metrics['duration']}秒")
 ```
 
 ## 📁 项目结构
 
 ```
 lite-mutil-task-manager/
-├── app/                           # 应用核心代码
-│   ├── backend/
-│   │   ├── models/
-│   │   │   ├── core/             # 核心数据模型
-│   │   │   │   ├── task.py       # 任务模型（状态机）
-│   │   │   │   ├── task_config.py # 任务配置系统
-│   │   │   │   └── ...
-│   │   │   └── queue/            # 队列相关模型
-│   │   │       └── task_queue.py # 优先级任务队列
-│   │   └── utils/                # 工具类
-│   │       ├── event_bus.py      # 事件总线
-│   │       └── task_ui.py        # 任务可视化界面
-│   └── tests/                    # 单元测试
+├── mutil_task/                    # 核心代码包
+│   ├── core/                     # 核心数据模型
+│   │   ├── task.py               # 任务模型（状态机实现）
+│   │   ├── task_config.py        # 配置化任务参数管理
+│   │   └── task_result.py        # 任务结果管理
+│   ├── queue/                    # 队列管理
+│   │   └── task_queue.py         # 优先级任务队列
+│   └── utils/                    # 工具类
+│       ├── event_bus.py          # 事件总线
+│       └── task_ui.py            # 任务可视化界面
+├── tests/                        # 单元测试
+│   ├── test_task_config.py       # 任务配置测试
+│   ├── test_task_model.py        # 任务模型测试
+│   ├── test_task_queue.py        # 任务队列测试
+│   ├── test_task_result.py       # 任务结果测试
+│   └── test_task_serialization_unittest.py  # 序列化测试
 ├── examples/                     # 使用示例
-│   └── task_queue_mvp.py        # MVP演示程序
-├── github_sync.py               # GitHub同步脚本
-├── git_config.json              # Git配置
-└── README.md                    # 项目文档
+│   └── task_queue_mvp.py         # MVP演示程序
+└── README.md                     # 项目文档
 ```
 
 ## 🔧 核心功能详解
@@ -112,18 +116,51 @@ lite-mutil-task-manager/
 
 ### 优先级调度
 
-4级优先级系统：
+4级优先级系统（数值越小优先级越高）：
 - **CRITICAL (0)** - 最高优先级
 - **HIGH (1)** - 高优先级
 - **NORMAL (2)** - 普通优先级（默认）
 - **LOW (3)** - 低优先级
+
+### 任务结果管理
+
+```python
+from mutil_task.core.task_result import TaskResult, ArtifactRef, ArtifactStorageType
+
+# 创建任务结果
+result = TaskResult(
+    task_id="task_123",
+    execution_id="exec_001",
+    status="completed"
+)
+
+# 记录性能指标
+result.add_metric("duration", 120.5)
+result.add_metric("memory_usage", 256)
+
+# 添加输出产物
+artifact = ArtifactRef(
+    storage_type=ArtifactStorageType.LOCAL,
+    uri="/tmp/output.log",
+    checksum="a"*64  # SHA-256
+)
+result.add_artifact("log", artifact)
+
+# 记录错误信息
+if failed:
+    result.set_error(
+        error_type="Validation",
+        message="Invalid input data",
+        stack_trace="Traceback..."
+    )
+```
 
 ### 配置化任务
 
 支持参数验证的任务配置：
 
 ```python
-from app.backend.models.core.task_config import TaskConfig, ParamDefinition, ParamType
+from mutil_task.core.task_config import TaskConfig, ParamDefinition, ParamType
 
 # 创建任务配置
 config = TaskConfig(name="数据处理任务")
@@ -136,46 +173,37 @@ config.add_param(ParamDefinition(
 ))
 ```
 
-## 📊 示例演示
+### 事件驱动架构
 
-运行 `examples/task_queue_mvp.py` 查看完整功能演示：
+系统采用发布-订阅模式进行组件间通信：
 
-```bash
-python examples/task_queue_mvp.py
+```python
+from mutil_task.utils.event_bus import EventBus, TaskEventType
+
+# 订阅任务状态变更事件
+def on_status_change(event_data):
+    task = event_data['task']
+    old_status = event_data['old_status']
+    new_status = event_data['new_status']
+    print(f"任务状态变更: {old_status.name} -> {new_status.name}")
+
+EventBus.subscribe(TaskEventType.STATUS_CHANGED, on_status_change)
 ```
-
-演示内容包括：
-- 传统任务和配置化任务的对比
-- 优先级调度效果展示
-- 实时进度监控面板
-- 参数验证错误处理
-
-## 🔄 GitHub同步
-
-项目提供智能同步脚本：
-
-### 使用方法
-
-1. 配置远程仓库信息（编辑 `git_config.json`）
-2. 运行同步脚本：
-```bash
-python github_sync.py
-```
-
-### 同步功能
-
-- ✅ 自动检测Git仓库状态
-- ✅ 智能提交代码变更
-- ✅ 处理推送冲突（支持强制推送）
-- ✅ 详细的错误诊断和重试机制
 
 ## 🧪 测试
 
 运行测试套件确保功能正常：
 
 ```bash
-python -m pytest app/tests/
+python -m unittest discover tests
 ```
+
+测试覆盖了以下方面：
+- 任务模型和状态转换
+- 任务配置和参数验证
+- 任务队列和优先级调度
+- 任务结果处理和产物管理
+- 序列化和反序列化
 
 ## 🤝 贡献指南
 
@@ -200,8 +228,4 @@ python -m pytest app/tests/
 
 ---
 
-*文档最后更新：2025-09-27*
-=======
-# lite-mutil-task-manager
-一款轻量级多任务管理系统
->>>>>>> 152f03afb5cead20ce9c07c5af159109759d0abd
+*文档最后更新：2025-09-28*

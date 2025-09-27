@@ -1,0 +1,27 @@
+{
+  "remote": {
+    "url": "git@github.com:ssLinChen/lite-mutil-task-manager.git",
+    "defaultBranch": "main"
+  },
+  "user": {
+    "name": "tutu",
+    "email": "y80200156@mail.ecust.edu.cn"
+  },
+  "branch": {
+    "default": "main",
+    "createOnPush": true
+  },
+  "commit": {
+    "autoAdd": true,
+    "messageTemplate": "Auto-commit at {timestamp}",
+    "includeTimestamp": true
+  },
+  "conflict": {
+    "forcePush": true,
+    "strategy": "ours"
+  },
+  "errorHandling": {
+    "retryCount": 3,
+    "showDetails": true
+  }
+}

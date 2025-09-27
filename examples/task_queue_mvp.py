@@ -3,13 +3,15 @@ from pathlib import Path
 from typing import Dict
 sys.path.append(str(Path(__file__).parent.parent))  # 添加项目根目录到路径
 
-from app.backend.models.core.task import Task, TaskPriority, TaskStatus
-from app.backend.models.core.task_config import TaskConfig, ParamDefinition, ParamType, ParameterValidationError
-from app.backend.models.queue.task_queue import TaskQueue
-from app.backend.utils.event_bus import EventBus
-from app.backend.utils.task_ui import render_full_panel
+from mutil_task.core.task import Task, TaskPriority, TaskStatus
+from mutil_task.core.task_config import TaskConfig, ParamDefinition, ParamType, ParameterValidationError
+from mutil_task.queue.task_queue import TaskQueue
+from mutil_task.utils.event_bus import EventBus
+from mutil_task.utils.task_ui import render_full_panel
 import time
 
+ 
+ 
 class ConfigurableMVPTask(Task):
     """支持配置的MVP任务类"""
     
@@ -17,7 +19,7 @@ class ConfigurableMVPTask(Task):
     validated_params: dict = {}
     _config: TaskConfig = None
     _execution_time: int = 5
-    _timeout: int = 30
+    _timeout: int = 10
     _retries: int = 3
     
     def __init__(self, title: str, priority: TaskPriority, config: TaskConfig, input_params: dict):
@@ -39,7 +41,7 @@ class ConfigurableMVPTask(Task):
             execution_time = validated_params.get('execution_time', 5)
             self.description = f"配置化任务 | 执行时间: {execution_time}秒"
             self._execution_time = execution_time
-            self._timeout = validated_params.get('timeout', 30)
+            self._timeout = validated_params.get('timeout', 10)
             self._retries = validated_params.get('retries', 3)
             
             # 存储验证后的参数（不通过Pydantic验证）
@@ -117,7 +119,7 @@ def create_task_configs() -> Dict[str, TaskConfig]:
             "name": "normal_processing", 
             "params": [
                 ("execution_time", ParamType.INTEGER, "执行时间(秒)", 10, {"min": 1, "max": 120}),
-                ("timeout", ParamType.INTEGER, "超时时间(秒)", 60, {"min": 10, "max": 600})
+                ("timeout", ParamType.INTEGER, "超时时间(秒)", 60, {"min": 2, "max": 600})
             ]
         }
     }
@@ -151,8 +153,8 @@ def run_mvp():
     
     # 创建传统任务（保持向后兼容）
     traditional_tasks = [
-        MVPTask(title="传统紧急任务", priority=TaskPriority.HIGH, execution_time=6),
-        MVPTask(title="传统常规任务", priority=TaskPriority.NORMAL, execution_time=10),
+        MVPTask(title="传统紧急任务", priority=TaskPriority.HIGH, execution_time=15),
+        MVPTask(title="传统常规任务", priority=TaskPriority.NORMAL, execution_time=18),
     ]
     
     # 创建配置化任务
@@ -161,13 +163,13 @@ def run_mvp():
             title="配置化紧急任务",
             priority=TaskPriority.HIGH,
             config=task_configs["urgent"],
-            input_params={"execution_time": 8, "timeout": 25, "retries": 5}
+            input_params={"execution_time": 8, "timeout": 10, "retries": 5}
         ),
         ConfigurableMVPTask(
             title="配置化常规任务", 
             priority=TaskPriority.NORMAL,
             config=task_configs["normal"],
-            input_params={"execution_time": 12, "timeout": 45}
+            input_params={"execution_time": 5, "timeout": 6}
         )
     ]
     
