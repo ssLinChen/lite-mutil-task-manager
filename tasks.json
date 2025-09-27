@@ -1,0 +1,62 @@
+{
+  "a13470be-25bb-4cb2-9781-b65d9333cab0": {
+    "id": "a13470be-25bb-4cb2-9781-b65d9333cab0",
+    "description": "成功任务",
+    "status": "TaskStatus.COMPLETED",
+    "metadata": {}
+  },
+  "e209e1b8-dbba-4070-9128-f59d05b6a2f9": {
+    "id": "e209e1b8-dbba-4070-9128-f59d05b6a2f9",
+    "description": "失败任务",
+    "status": "TaskStatus.FAILED",
+    "metadata": {}
+  },
+  "c6900a34-fe7d-42d5-b0bd-0e36b27530be": {
+    "id": "c6900a34-fe7d-42d5-b0bd-0e36b27530be",
+    "description": "并发任务0",
+    "status": "TaskStatus.COMPLETED",
+    "metadata": {}
+  },
+  "fa565987-36ff-4d3e-b28c-a95ea1a3ebdf": {
+    "id": "fa565987-36ff-4d3e-b28c-a95ea1a3ebdf",
+    "description": "并发任务1",
+    "status": "TaskStatus.COMPLETED",
+    "metadata": {}
+  },
+  "acf187eb-1842-4130-afbc-fb6d7891788a": {
+    "id": "acf187eb-1842-4130-afbc-fb6d7891788a",
+    "description": "并发任务2",
+    "status": "TaskStatus.COMPLETED",
+    "metadata": {}
+  },
+  "6ebd2571-7951-46fa-b880-71c5c5f68301": {
+    "id": "6ebd2571-7951-46fa-b880-71c5c5f68301",
+    "description": "并发任务3",
+    "status": "TaskStatus.COMPLETED",
+    "metadata": {}
+  },
+  "10efdaf9-5d85-4d54-a8e0-74c38d3929bd": {
+    "id": "10efdaf9-5d85-4d54-a8e0-74c38d3929bd",
+    "description": "顺序任务0",
+    "status": "TaskStatus.COMPLETED",
+    "metadata": {}
+  },
+  "6c9d74bd-b084-4310-9241-d7705fd0468e": {
+    "id": "6c9d74bd-b084-4310-9241-d7705fd0468e",
+    "description": "顺序任务1",
+    "status": "TaskStatus.COMPLETED",
+    "metadata": {}
+  },
+  "2dd2b826-2859-4919-9fdd-0b4d5d0ef345": {
+    "id": "2dd2b826-2859-4919-9fdd-0b4d5d0ef345",
+    "description": "顺序任务2",
+    "status": "TaskStatus.COMPLETED",
+    "metadata": {}
+  },
+  "571ae6dd-9851-4f75-9f1b-9554b5f1d405": {
+    "id": "571ae6dd-9851-4f75-9f1b-9554b5f1d405",
+    "description": "长时间任务",
+    "status": "TaskStatus.COMPLETED",
+    "metadata": {}
+  }
+}

@@ -1,0 +1,73 @@
+name: TaskResult Validation
+
+on:
+  push:
+    paths:
+      - 'app/backend/models/task_result.py'
+      - 'app/tests/test_task_result.py'
+  pull_request:
+    paths:
+      - 'app/backend/models/task_result.py'
+      - 'app/tests/test_task_result.py'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install mypy bandit pydantic
+        
+    - name: Run Unit Tests
+      run: python -m unittest app/tests/test_task_result.py -v
+      
+    - name: Static Type Checking
+      run: mypy app/backend/models/task_result.py --strict
+      
+    - name: Security Linting
+      run: bandit -r app/backend/models/
+      
+    - name: Performance Test
+      run: |
+        python -c "
+import time
+from app.backend.models.task_result import TaskResult
+from app.backend.models.task_result import ArtifactStorageType
+
+def test_performance():
+    result = TaskResult(
+        task_id='perf_test',
+        execution_id='exec_123',
+        status='running'
+    )
+    
+    # Timeline performance
+    start = time.time()
+    for i in range(1000):
+        result.record_timeline_event(f'event_{i}')
+    timeline_time = time.time() - start
+    
+    # Artifact performance
+    start = time.time()
+    for i in range(1000):
+        result.add_artifact(f'artifact_{i}', ArtifactRef(
+            storage_type=ArtifactStorageType.LOCAL,
+            uri=f'/tmp/test_{i}',
+            checksum='a'*64
+        ))
+    artifact_time = time.time() - start
+    
+    assert timeline_time < 0.1, f'Timeline performance failed: {timeline_time}'
+    assert artifact_time < 0.2, f'Artifact performance failed: {artifact_time}'
+    print(f'Performance tests passed (timeline: {timeline_time:.3f}s, artifacts: {artifact_time:.3f}s)')
+
+test_performance()
+"

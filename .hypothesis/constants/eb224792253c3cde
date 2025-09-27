@@ -1,0 +1,4 @@
+# file: C:\Users\10129\CodeBuddy\MutilTask\app\backend\models\core\task.py
+# hypothesis_version: 6.138.15
+
+[0.0, 1.0, 100, 500, '+00:00', ', ', 'TaskPriority', 'TaskStatus', 'Z', '__main__', 'before', 'created_at', 'datetime对象必须包含时区信息', 'description', 'example', 'id', 'pending', 'priority', 'progress', 'queue_position', 'queue_total', 'status', 'title', 'updated_at', '任务描述', '任务标题', '任务状态', '任务进度百分比', '初始状态:', '失败任务', '尝试取消已完成任务:', '数据处理任务', '时间字符串必须包含时区信息', '更新时间不能早于创建时间', '测试任务', '状态机验证测试', '重试失败任务:', '队列位置', '队列总数']
