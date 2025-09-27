@@ -1,0 +1,7 @@
+[周六 2025/09/27 23:11:08.08] ===== Script Start ===== 
+[周六 2025/09/27 23:11:08.09] Loading configuration from gitConfig.json 
+[周六 2025/09/27 23:11:08.11] Verifying Git installation 
+[周六 2025/09/27 23:11:08.14] Checking repository status 
+[周六 2025/09/27 23:11:08.17] Starting regular workflow 
+[周六 2025/09/27 23:11:08.20] Current branch: main 
+[周六 2025/09/27 23:11:08.28] Warning: Pull failed, attempting to continue 
