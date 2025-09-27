@@ -51,3 +51,32 @@ error: failed to push some refs to 'git@github.com''
   cmdline: git push --porcelain -- origin --set-upstream main
   stderr: 'error: src refspec --set-upstream does not match any
 error: failed to push some refs to 'git@github.com''
+2025-09-27 23:30:42,324 - WARNING: ≥¢ ‘ 2/3  ß∞‹: Cmd('git') failed due to: exit code(1)
+  cmdline: git push --porcelain -- origin --set-upstream main
+  stderr: 'error: src refspec --set-upstream does not match any
+error: failed to push some refs to 'git@github.com''
+2025-09-27 23:30:46,565 - WARNING: ≥¢ ‘ 3/3  ß∞‹: Cmd('git') failed due to: exit code(1)
+  cmdline: git push --porcelain -- origin --set-upstream main
+  stderr: 'error: src refspec --set-upstream does not match any
+error: failed to push some refs to 'git@github.com''
+2025-09-27 23:30:46,565 - ERROR: Õ¨≤Ω◊Ó÷’ ß∞‹
+2025-09-27 23:30:46,565 - ERROR: ¥ÌŒÛœÍ«È
+Traceback (most recent call last):
+  File "C:\Users\10129\CodeBuddy\MutilTask\github_sync.py", line 82, in <module>
+    syncer.sync()
+    ~~~~~~~~~~~^^
+  File "C:\Users\10129\CodeBuddy\MutilTask\github_sync.py", line 68, in sync
+    repo.remotes.origin.push(push_args)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "C:\Python313\Lib\site-packages\git\remote.py", line 1210, in push
+    return self._get_push_info(proc, progress, kill_after_timeout=kill_after_timeout)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\site-packages\git\remote.py", line 975, in _get_push_info
+    proc.wait(stderr=stderr_text)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\site-packages\git\cmd.py", line 419, in wait
+    raise GitCommandError(remove_password_if_present(self.args), status, errstr)
+git.exc.GitCommandError: Cmd('git') failed due to: exit code(1)
+  cmdline: git push --porcelain -- origin --set-upstream main
+  stderr: 'error: src refspec --set-upstream does not match any
+error: failed to push some refs to 'git@github.com''

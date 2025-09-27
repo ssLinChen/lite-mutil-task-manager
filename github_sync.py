@@ -61,11 +61,16 @@ class GitHubSyncer:
                 if 'origin' not in repo.remotes:
                     repo.create_remote('origin', self.config['remote']['url'])
 
-                push_args = [self.config['branch']['default']]
-                if self.config['branch']['createOnPush']:
-                    push_args.insert(0, '--set-upstream')
+                # 正确构建 git push 参数
+                branch_name = self.config['branch']['default']
                 
-                repo.remotes.origin.push(push_args)
+                # 根据 GitPython 文档，push 方法需要正确区分 refspec 和选项
+                if self.config['branch']['createOnPush']:
+                    # 使用 set_upstream 选项正确设置上游分支
+                    repo.git.push('origin', branch_name, set_upstream=True)
+                else:
+                    # 普通推送
+                    repo.remotes.origin.push(branch_name)
                 logging.info("同步成功")
                 return True
 
