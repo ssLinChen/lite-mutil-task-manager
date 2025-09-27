@@ -87,3 +87,41 @@ fatal: Could not read from remote repository.
 
 Please make sure you have the correct access rights
 and the repository exists.'
+2025-09-27 23:32:27,017 - WARNING: ≥¢ ‘ 2/3  ß∞‹: Cmd('git') failed due to: exit code(128)
+  cmdline: git push --set-upstream origin main
+  stderr: 'fatal: 'git@github.com' does not appear to be a git repository
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.'
+2025-09-27 23:32:31,289 - WARNING: ≥¢ ‘ 3/3  ß∞‹: Cmd('git') failed due to: exit code(128)
+  cmdline: git push --set-upstream origin main
+  stderr: 'fatal: 'git@github.com' does not appear to be a git repository
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.'
+2025-09-27 23:32:31,289 - ERROR: Õ¨≤Ω◊Ó÷’ ß∞‹
+2025-09-27 23:32:31,289 - ERROR: ¥ÌŒÛœÍ«È
+Traceback (most recent call last):
+  File "C:\Users\10129\CodeBuddy\MutilTask\github_sync.py", line 87, in <module>
+    syncer.sync()
+    ~~~~~~~~~~~^^
+  File "C:\Users\10129\CodeBuddy\MutilTask\github_sync.py", line 70, in sync
+    repo.git.push('origin', branch_name, set_upstream=True)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\site-packages\git\cmd.py", line 1003, in <lambda>
+    return lambda *args, **kwargs: self._call_process(name, *args, **kwargs)
+                                   ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\site-packages\git\cmd.py", line 1616, in _call_process
+    return self.execute(call, **exec_kwargs)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\site-packages\git\cmd.py", line 1406, in execute
+    raise GitCommandError(redacted_command, status, stderr_value, stdout_value)
+git.exc.GitCommandError: Cmd('git') failed due to: exit code(128)
+  cmdline: git push --set-upstream origin main
+  stderr: 'fatal: 'git@github.com' does not appear to be a git repository
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.'
