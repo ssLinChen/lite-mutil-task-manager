@@ -2,297 +2,80 @@
 chcp 65001 >nul
 setlocal enabledelayedexpansion
 
-:: 加载配置文件
-call :load_config
-if %errorlevel% neq 0 (
-    echo [WARNING] 使用默认配置继续执行
-    echo [WARNING] Continuing with default settings
-)
+:: ========================================
+:: Git Push Script v4.0 - Minimalist Version
+:: ========================================
 
-echo ========================================
-echo [tutu] Git项目推送脚本 v2.0 (配置驱动)
-echo [tutu] Git Project Push Script v2.0 (Config-driven)
-echo ========================================
-
-:: 设置项目根目录
+:: Init
 set "PROJECT_ROOT=%~dp0"
+set "CONFIG_FILE=gitConfig.json"
 
-:: 配置参数默认值
-if not defined REMOTE_URL set "REMOTE_URL="
-if not defined USER_NAME set "USER_NAME=Git User"
-if not defined USER_EMAIL set "USER_EMAIL=user@example.com"
-if not defined DEFAULT_BRANCH set "DEFAULT_BRANCH=main"
-if not defined AUTO_COMMIT set "AUTO_COMMIT=true"
-if not defined COMMIT_MSG set "COMMIT_MSG=Auto-commit at {timestamp}"
+:: Main Flow
+call :load_config || goto :error
+call :check_git || goto :error
+call :git_operation || goto :error
 
-goto :main
+goto :end
+
+:: ========================================
+:: Core Functions
+:: ========================================
 
 :load_config
-    if not exist "gitConfig.json" (
-        echo [INFO] 未找到配置文件 gitConfig.json
-        echo [INFO] Config file gitConfig.json not found
+    if not exist "%CONFIG_FILE%" (
+        echo [错误] 缺少配置文件: %CONFIG_FILE%
         exit /b 1
     )
 
-    :: 使用jq解析JSON (需安装)
-    where jq >nul 2>&1
-    if %errorlevel% equ 0 (
-        for /f "delims=" %%i in ('jq -r ".remoteUrl" gitConfig.json') do set "REMOTE_URL=%%i"
-        for /f "delims=" %%i in ('jq -r ".user.name" gitConfig.json') do set "USER_NAME=%%i"
-        for /f "delims=" %%i in ('jq -r ".user.email" gitConfig.json') do set "USER_EMAIL=%%i"
-        for /f "delims=" %%i in ('jq -r ".branch.default" gitConfig.json') do set "DEFAULT_BRANCH=%%i"
-    ) else (
-        :: 简单解析 (无jq时)
-        for /f "tokens=2 delims=:," %%i in ('findstr "\"remoteUrl\"" gitConfig.json') do (
-            set "REMOTE_URL=%%i"
-            set "REMOTE_URL=!REMOTE_URL:"=!"
-            set "REMOTE_URL=!REMOTE_URL: =!"
-        )
+    for /f "tokens=2 delims=:," %%i in ('findstr "\"url\"" %CONFIG_FILE% ^| findstr "\"remote\""') do (
+        set "REMOTE_URL=%%i"
+        set "REMOTE_URL=!REMOTE_URL:"=!"
+        set "REMOTE_URL=!REMOTE_URL: =!"
+    )
+
+    if "!REMOTE_URL!"=="" (
+        echo [错误] 配置中未找到远程仓库URL
+        exit /b 1
     )
     exit /b 0
 
-:main
-cd /d "%PROJECT_ROOT%" || (
-    echo [ERROR] 无法进入项目目录: %PROJECT_ROOT%
-    echo [ERROR] Cannot enter project directory: %PROJECT_ROOT%
-    exit /b 1
-)
-
-echo [INFO] 项目目录: %PROJECT_ROOT%
-echo [INFO] Project directory: %PROJECT_ROOT%
-
-:: 检查Git是否安装
-git --version >nul 2>&1
-if %errorlevel% neq 0 (
-    echo [ERROR] Git未安装或未添加到PATH环境变量
-    echo [ERROR] Git is not installed or not in PATH
-    echo.
-    echo [建议] 请从 https://git-scm.com/downloads 下载并安装Git
-    echo [Suggestion] Download Git from https://git-scm.com/downloads
-    exit /b 1
-)
-
-echo [OK] Git已正确安装
-echo [OK] Git is properly installed
-
-:: 检测Git仓库状态
-git rev-parse --is-inside-work-tree >nul 2>&1
-if %errorlevel% neq 0 (
-    echo [INFO] 未检测到Git仓库，执行初始化流程...
-    echo [INFO] No Git repository detected, starting initialization...
-    call :initialize_repository
-) else (
-    echo [INFO] 检测到现有Git仓库，执行常规推送...
-    echo [INFO] Existing Git repository detected, starting regular push...
-    call :regular_push
-)
-
-exit /b 0
-
-:initialize_repository
-    echo.
-    echo ===== 仓库初始化 =====
-    echo ===== Repository Initialization =====
-    
-    :: 创建基础README文件
-    if not exist README.md (
-        echo # 项目名称 > README.md
-        echo 项目描述 >> README.md
-        echo. >> README.md
-        echo 创建时间: %date% %time% >> README.md
-        echo [OK] 创建README.md文件
-        echo [OK] Created README.md file
-    )
-    
-    :: 初始化Git仓库
-    git init
-    if %errorlevel% neq 0 (
-        echo [ERROR] Git仓库初始化失败
-        echo [ERROR] Git repository initialization failed
+:check_git
+    git --version >nul 2>&1 || (
+        echo [错误] Git未安装或不在PATH中
         exit /b 1
     )
-    echo [OK] Git仓库初始化成功
-    echo [OK] Git repository initialized successfully
-    
-    :: 配置用户信息（如果未配置）
-    git config user.name >nul 2>&1
-    if %errorlevel% neq 0 (
-        echo [INFO] 配置用户信息...
-        echo [INFO] Configuring user info...
-        git config user.name "!USER_NAME!"
-        git config user.email "!USER_EMAIL!"
-        echo [提示] 当前使用配置的用户信息:
-        echo [Hint] Current user info from config:
-        echo   姓名: !USER_NAME!
-        echo   Name: !USER_NAME!
-        echo   邮箱: !USER_EMAIL!
-        echo   Email: !USER_EMAIL!
+    exit /b 0
+
+:git_operation
+    git rev-parse --is-inside-work-tree >nul 2>&1
+    if %errorlevel% equ 0 (
+        call :push_changes
+    ) else (
+        call :init_repo
     )
-    
-    :: 添加文件并提交
+    exit /b %errorlevel%
+
+:init_repo
+    echo [信息] 初始化新仓库...
+    git init || exit /b 1
+    git remote add origin "!REMOTE_URL!" || exit /b 1
     git add .
-    
-    :: 生成提交信息
-    set "TIMESTAMP=%date% %time%"
-    set "COMMIT_MSG=!COMMIT_MSG:{timestamp}=!TIMESTAMP!"
-    
-    echo [INFO] 使用提交信息: !COMMIT_MSG!
-    echo [INFO] Using commit message: !COMMIT_MSG!
-    git commit -m "!COMMIT_MSG!"
-    if %errorlevel% neq 0 (
-        echo [ERROR] 初始提交失败
-        echo [ERROR] Initial commit failed
-        exit /b 1
-    )
-    echo [OK] 初始提交完成
-    echo [OK] Initial commit completed
-    
-    :: 检查远程仓库配置
-    if "!REMOTE_URL!"=="" (
-        echo [INFO] 未配置远程仓库URL，跳过推送
-        echo [INFO] No remote URL configured, skipping push
-        goto :eof
-    )
-    
-    :: 添加远程仓库
-    echo [INFO] 配置远程仓库: !REMOTE_URL!
-    echo [INFO] Configuring remote repository: !REMOTE_URL!
-    git remote add origin "!REMOTE_URL!"
-    if %errorlevel% neq 0 (
-        echo [ERROR] 添加远程仓库失败
-        echo [ERROR] Failed to add remote repository
-        exit /b 1
-    )
-    
-    :: 首次推送
-    echo [INFO] 正在推送到远程仓库...
-    echo [INFO] Pushing to remote repository...
-    git push -u origin main
-    if %errorlevel% neq 0 (
-        echo [WARNING] 首次推送失败，尝试推送到master分支...
-        echo [WARNING] First push failed, trying master branch...
-        git branch -M master
-        git push -u origin master
-    )
-    
-    if %errorlevel% equ 0 (
-        echo [SUCCESS] 仓库初始化并推送成功！
-        echo [SUCCESS] Repository initialized and pushed successfully!
-    ) else (
-        echo [ERROR] 推送失败，可能原因：
-        echo [ERROR] Push failed, possible reasons:
-        echo   - 远程仓库URL错误
-        echo   - SSH密钥未配置
-        echo   - 网络连接问题
-        echo   - 远程仓库权限不足
-        echo.
-        echo [建议] 请检查远程仓库URL和SSH密钥配置
-        echo [Suggestion] Check remote URL and SSH key configuration
-    )
-    
-    goto :eof
+    git commit -m "初始提交" || exit /b 1
+    git push -u origin main || exit /b 1
+    exit /b 0
 
-:regular_push
-    echo.
-    echo ===== 常规推送 =====
-    echo ===== Regular Push =====
-    
-    :: 获取当前分支
-    for /f "tokens=*" %%a in ('git rev-parse --abbrev-ref HEAD') do set "CURRENT_BRANCH=%%a"
-    echo [INFO] 当前分支: !CURRENT_BRANCH!
-    echo [INFO] Current branch: !CURRENT_BRANCH!
-    
-    :: 检查远程仓库配置
-    git remote get-url origin >nul 2>&1
-    if %errorlevel% neq 0 (
-        echo [ERROR] 未配置远程仓库
-        echo [ERROR] Remote repository not configured
-        echo [建议] 请使用: git remote add origin <url> 配置远程仓库
-        echo [Suggestion] Use: git remote add origin <url> to configure remote
-        exit /b 1
-    )
-    
-    :: 拉取最新更改（避免冲突）
-    echo [INFO] 获取远程最新更改...
-    echo [INFO] Fetching latest changes from remote...
-    git fetch origin
-    
-    :: 检查是否有本地更改
-    git diff --exit-code --quiet
-    if %errorlevel% equ 0 (
-        git diff --cached --exit-code --quiet
-        if %errorlevel% equ 0 (
-            echo [INFO] 没有检测到文件变更
-            echo [INFO] No file changes detected
-            goto :check_remote
-        )
-    )
-    
-    :: 有更改，执行提交
-    echo [INFO] 检测到文件变更，执行提交...
-    echo [INFO] File changes detected, committing...
-    
+:push_changes
+    echo [信息] 执行推送操作...
     git add .
-    set "COMMIT_MSG=自动提交 - %date% %time%"
-    git commit -m "!COMMIT_MSG!"
-    if %errorlevel% neq 0 (
-        echo [ERROR] 提交失败
-        echo [ERROR] Commit failed
-        exit /b 1
-    )
-    echo [OK] 提交完成
-    echo [OK] Commit completed
+    git commit -m "自动提交: %date% %time%" || exit /b 1
+    git push || exit /b 1
+    exit /b 0
 
-:check_remote
-    :: 检查远程分支状态
-    git ls-remote --heads origin !CURRENT_BRANCH! >nul 2>&1
-    if %errorlevel% neq 0 (
-        echo [INFO] 远程分支不存在，创建新分支...
-        echo [INFO] Remote branch doesn't exist, creating new branch...
-        git push -u origin !CURRENT_BRANCH!
-    ) else (
-        :: 推送更改
-        echo [INFO] 推送到远程分支...
-        echo [INFO] Pushing to remote branch...
-        git push origin !CURRENT_BRANCH!
-    )
-    
-    if %errorlevel% equ 0 (
-        echo [SUCCESS] 推送成功！
-        echo [SUCCESS] Push successful!
-        
-        :: 显示推送信息
-        git log --oneline -3
-    ) else (
-        echo [ERROR] 推送失败
-        echo [ERROR] Push failed
-        
-        :: 提供冲突解决建议
-        echo.
-        echo [冲突解决建议]
-        echo [Conflict Resolution Suggestions]
-        echo 1. 拉取远程更改: git pull origin !CURRENT_BRANCH!
-        echo 2. 解决冲突后重新提交
-        echo 3. 再次推送: git push origin !CURRENT_BRANCH!
-    )
-    
-    goto :eof
-
-:error_handling
+:error
     echo.
-    echo ===== 错误处理 =====
-    echo ===== Error Handling =====
-    echo [ERROR] 脚本执行过程中出现错误
-    echo [ERROR] Error occurred during script execution
-    echo 错误代码: %errorlevel%
-    echo Error code: %errorlevel%
-    
-    goto :eof
+    echo [错误] 操作失败 (错误码: %errorlevel%)
+    echo [建议] 检查网络连接和仓库权限
 
-:: 脚本结束
-echo.
-echo ========================================
-echo [tutu] 脚本执行完成
-echo [tutu] Script execution completed
-echo ========================================
-pause
+:end
+    pause
+    exit /b 0
