@@ -125,3 +125,12 @@ fatal: Could not read from remote repository.
 
 Please make sure you have the correct access rights
 and the repository exists.'
+2025-09-27 23:35:09,393 - INFO: Git仓库初始化成功
+2025-09-27 23:35:09,393 - INFO: 配置的远程仓库URL: git@github.com:ssLinChen/lite-mutil-task-manager.git
+2025-09-27 23:35:09,393 - INFO: 测试SSH连接到: github.com
+2025-09-27 23:35:12,850 - INFO: SSH连接测试成功: github.com
+2025-09-27 23:35:12,851 - INFO: 检查仓库是否存在: ssLinChen/lite-mutil-task-manager 在 github.com
+2025-09-27 23:35:24,073 - WARNING: 检查仓库存在性异常: Command '['git', 'ls-remote', 'git@github.com:ssLinChen/lite-mutil-task-manager.git', 'HEAD']' timed out after 10 seconds
+2025-09-27 23:35:24,073 - WARNING: 远程仓库不存在或无法访问
+2025-09-27 23:35:24,073 - INFO: 请确认仓库URL是否正确，并且您有权限访问该仓库
+2025-09-27 23:35:24,078 - INFO: Git身份设置为: tutu <y80200156@mail.ecust.edu.cn>
