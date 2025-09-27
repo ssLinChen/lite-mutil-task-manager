@@ -216,3 +216,31 @@ hint: have locally. This is usually caused by another repository pushing to
 hint: the same ref. If you want to integrate the remote changes, use
 hint: 'git pull' before pushing again.
 hint: See the 'Note about fast-forwards' in 'git push --help' for details.'
+2025-09-27 23:37:40,420 - INFO: Git仓库初始化成功
+2025-09-27 23:37:40,420 - INFO: 配置的远程仓库URL: git@github.com:ssLinChen/lite-mutil-task-manager.git
+2025-09-27 23:37:40,420 - INFO: 测试SSH连接到: github.com
+2025-09-27 23:37:43,922 - INFO: SSH连接测试成功: github.com
+2025-09-27 23:37:43,922 - INFO: 检查仓库是否存在: ssLinChen/lite-mutil-task-manager 在 github.com
+2025-09-27 23:37:56,769 - WARNING: 检查仓库存在性异常: Command '['git', 'ls-remote', 'git@github.com:ssLinChen/lite-mutil-task-manager.git', 'HEAD']' timed out after 10 seconds
+2025-09-27 23:37:56,769 - WARNING: 远程仓库不存在或无法访问
+2025-09-27 23:37:56,769 - INFO: 请确认仓库URL是否正确，并且您有权限访问该仓库
+2025-09-27 23:37:56,774 - INFO: Git身份设置为: tutu <y80200156@mail.ecust.edu.cn>
+2025-09-27 23:37:56,804 - INFO: 已添加所有更改到暂存区
+2025-09-27 23:37:56,909 - INFO: 已提交更改: Auto-commit at 2025-09-27 23:37:56
+2025-09-27 23:37:56,910 - INFO: 远程仓库URL已正确设置: git@github.com:ssLinChen/lite-mutil-task-manager.git
+2025-09-27 23:37:56,910 - INFO: 使用分支: main
+2025-09-27 23:37:56,937 - INFO: 本地分支 main 已存在
+2025-09-27 23:37:56,937 - INFO: 拉取远程仓库更改...
+2025-09-27 23:38:00,749 - INFO: 远程分支 main 存在，执行拉取操作
+2025-09-27 23:38:06,092 - WARNING: 检测到不相关的历史记录，尝试使用 --allow-unrelated-histories 选项
+2025-09-27 23:38:10,044 - WARNING: 拉取远程更改时出错: Cmd('git') failed due to: exit code(1)
+  cmdline: git pull origin main --allow-unrelated-histories
+  stdout: 'Auto-merging README.md
+CONFLICT (add/add): Merge conflict in README.md
+Automatic merge failed; fix conflicts and then commit the result.'
+  stderr: 'From github.com:ssLinChen/lite-mutil-task-manager
+ * branch            main       -> FETCH_HEAD'
+2025-09-27 23:38:10,044 - WARNING: 将尝试强制推送
+2025-09-27 23:38:10,044 - INFO: 开始推送到远程仓库...
+2025-09-27 23:38:10,044 - WARNING: 使用强制推送选项
+2025-09-27 23:38:14,833 - INFO: 同步成功完成
