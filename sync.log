@@ -153,3 +153,66 @@ hint: 'git pull' before pushing again.
 hint: See the 'Note about fast-forwards' in 'git push --help' for details.'
 2025-09-27 23:35:29,660 - INFO: 等待 2 秒后重试...
 2025-09-27 23:35:31,668 - INFO: Git身份设置为: tutu <y80200156@mail.ecust.edu.cn>
+2025-09-27 23:35:31,719 - INFO: 已添加所有更改到暂存区
+2025-09-27 23:35:31,786 - INFO: 已提交更改: Auto-commit at 2025-09-27 23:35:31
+2025-09-27 23:35:31,787 - INFO: 远程仓库URL已正确设置: git@github.com:ssLinChen/lite-mutil-task-manager.git
+2025-09-27 23:35:31,787 - INFO: 使用分支: main
+2025-09-27 23:35:31,813 - INFO: 本地分支 main 已存在
+2025-09-27 23:35:31,814 - INFO: 开始推送到远程仓库...
+2025-09-27 23:35:31,814 - INFO: 使用 --set-upstream 选项推送分支 main
+2025-09-27 23:35:35,530 - WARNING: 尝试 2/3 失败: Cmd('git') failed due to: exit code(1)
+  cmdline: git push --set-upstream origin main
+  stderr: 'To github.com:ssLinChen/lite-mutil-task-manager.git
+ ! [rejected]        main -> main (fetch first)
+error: failed to push some refs to 'github.com:ssLinChen/lite-mutil-task-manager.git'
+hint: Updates were rejected because the remote contains work that you do not
+hint: have locally. This is usually caused by another repository pushing to
+hint: the same ref. If you want to integrate the remote changes, use
+hint: 'git pull' before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.'
+2025-09-27 23:35:35,530 - INFO: 等待 4 秒后重试...
+2025-09-27 23:35:39,536 - INFO: Git身份设置为: tutu <y80200156@mail.ecust.edu.cn>
+2025-09-27 23:35:39,587 - INFO: 已添加所有更改到暂存区
+2025-09-27 23:35:39,660 - INFO: 已提交更改: Auto-commit at 2025-09-27 23:35:39
+2025-09-27 23:35:39,660 - INFO: 远程仓库URL已正确设置: git@github.com:ssLinChen/lite-mutil-task-manager.git
+2025-09-27 23:35:39,661 - INFO: 使用分支: main
+2025-09-27 23:35:39,689 - INFO: 本地分支 main 已存在
+2025-09-27 23:35:39,689 - INFO: 开始推送到远程仓库...
+2025-09-27 23:35:39,690 - INFO: 使用 --set-upstream 选项推送分支 main
+2025-09-27 23:35:43,479 - WARNING: 尝试 3/3 失败: Cmd('git') failed due to: exit code(1)
+  cmdline: git push --set-upstream origin main
+  stderr: 'To github.com:ssLinChen/lite-mutil-task-manager.git
+ ! [rejected]        main -> main (fetch first)
+error: failed to push some refs to 'github.com:ssLinChen/lite-mutil-task-manager.git'
+hint: Updates were rejected because the remote contains work that you do not
+hint: have locally. This is usually caused by another repository pushing to
+hint: the same ref. If you want to integrate the remote changes, use
+hint: 'git pull' before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.'
+2025-09-27 23:35:43,479 - ERROR: 达到最大重试次数，同步最终失败
+2025-09-27 23:35:43,480 - ERROR: 错误详情
+Traceback (most recent call last):
+  File "C:\Users\10129\CodeBuddy\MutilTask\github_sync.py", line 225, in <module>
+    syncer.sync()
+    ~~~~~~~~~~~^^
+  File "C:\Users\10129\CodeBuddy\MutilTask\github_sync.py", line 191, in sync
+    self.repo.git.push('origin', branch_name, set_upstream=True)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\site-packages\git\cmd.py", line 1003, in <lambda>
+    return lambda *args, **kwargs: self._call_process(name, *args, **kwargs)
+                                   ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\site-packages\git\cmd.py", line 1616, in _call_process
+    return self.execute(call, **exec_kwargs)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\site-packages\git\cmd.py", line 1406, in execute
+    raise GitCommandError(redacted_command, status, stderr_value, stdout_value)
+git.exc.GitCommandError: Cmd('git') failed due to: exit code(1)
+  cmdline: git push --set-upstream origin main
+  stderr: 'To github.com:ssLinChen/lite-mutil-task-manager.git
+ ! [rejected]        main -> main (fetch first)
+error: failed to push some refs to 'github.com:ssLinChen/lite-mutil-task-manager.git'
+hint: Updates were rejected because the remote contains work that you do not
+hint: have locally. This is usually caused by another repository pushing to
+hint: the same ref. If you want to integrate the remote changes, use
+hint: 'git pull' before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.'

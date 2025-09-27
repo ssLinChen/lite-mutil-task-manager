@@ -184,14 +184,62 @@ class GitHubSyncer:
                     logging.info(f"本地分支 {branch_name} 不存在，创建新分支")
                     self.repo.git.checkout('-b', branch_name)
                 
+                # 先尝试拉取远程更改
+                try:
+                    logging.info(f"拉取远程仓库更改...")
+                    # 检查远程分支是否存在
+                    remote_refs = self.repo.git.ls_remote('--heads', 'origin', branch_name).strip()
+                    
+                    if remote_refs:  # 远程分支存在
+                        logging.info(f"远程分支 {branch_name} 存在，执行拉取操作")
+                        try:
+                            # 尝试执行拉取操作
+                            self.repo.git.pull('origin', branch_name, '--no-rebase')
+                            logging.info(f"成功拉取远程更改")
+                        except GitCommandError as pull_error:
+                            if "refusing to merge unrelated histories" in str(pull_error):
+                                logging.warning("检测到不相关的历史记录，尝试使用 --allow-unrelated-histories 选项")
+                                self.repo.git.pull('origin', branch_name, '--allow-unrelated-histories')
+                                logging.info("成功合并不相关的历史记录")
+                            else:
+                                # 如果是合并冲突，我们可以选择强制推送或中止
+                                if "CONFLICT" in str(pull_error):
+                                    logging.warning("拉取时发生合并冲突")
+                                    if self.config.get('conflict', {}).get('forcePush', False):
+                                        logging.warning("配置设置为强制推送，将覆盖远程更改")
+                                    else:
+                                        logging.error("合并冲突，需要手动解决")
+                                        raise
+                                else:
+                                    raise
+                    else:
+                        logging.info(f"远程分支 {branch_name} 不存在，将创建新分支")
+                except Exception as e:
+                    logging.warning(f"拉取远程更改时出错: {e}")
+                    # 如果拉取失败但配置允许强制推送，则继续
+                    if not self.config.get('conflict', {}).get('forcePush', False):
+                        raise
+                    logging.warning("将尝试强制推送")
+                
                 # 推送到远程仓库
                 logging.info(f"开始推送到远程仓库...")
-                if self.config['branch']['createOnPush']:
-                    logging.info(f"使用 --set-upstream 选项推送分支 {branch_name}")
-                    self.repo.git.push('origin', branch_name, set_upstream=True)
+                
+                # 检查是否需要强制推送
+                force_push = self.config.get('conflict', {}).get('forcePush', False)
+                
+                if force_push:
+                    logging.warning("使用强制推送选项")
+                    if self.config['branch']['createOnPush']:
+                        self.repo.git.push('origin', branch_name, '--force', set_upstream=True)
+                    else:
+                        self.repo.git.push('origin', branch_name, '--force')
                 else:
-                    logging.info(f"推送分支 {branch_name}")
-                    self.repo.remotes.origin.push(branch_name)
+                    if self.config['branch']['createOnPush']:
+                        logging.info(f"使用 --set-upstream 选项推送分支 {branch_name}")
+                        self.repo.git.push('origin', branch_name, set_upstream=True)
+                    else:
+                        logging.info(f"推送分支 {branch_name}")
+                        self.repo.remotes.origin.push(branch_name)
                 
                 logging.info("同步成功完成")
                 return True

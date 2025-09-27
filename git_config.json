@@ -16,6 +16,10 @@
     "messageTemplate": "Auto-commit at {timestamp}",
     "includeTimestamp": true
   },
+  "conflict": {
+    "forcePush": true,
+    "strategy": "ours"
+  },
   "errorHandling": {
     "retryCount": 3,
     "showDetails": true
