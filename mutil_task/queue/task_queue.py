@@ -66,9 +66,25 @@ class TaskQueue:
             task.status = TaskStatus.COMPLETED
             task.progress = 1.0
             self._completed_tasks[task_id] = task
+            
         except Exception as e:
+            # 错误处理：标记任务失败
             task.status = TaskStatus.FAILED
-            raise
+            
+            # 简单的重试逻辑（最多重试3次）
+            if not hasattr(task, 'retry_count'):
+                task.retry_count = 0
+                
+            if task.retry_count < 3:
+                task.retry_count += 1
+                # 重新入队进行重试
+                with self._lock:
+                    task.status = TaskStatus.QUEUED
+                    heapq.heappush(self._heap, (task.priority.value, task.id, task))
+            else:
+                # 超过重试次数，记录最终失败
+                print(f"任务 {task.id} 执行失败，已达到最大重试次数: {e}")
+                
         finally:
             with self._lock:
                 self._active_tasks.pop(task_id, None)

@@ -1,9 +1,10 @@
 from enum import Enum
 from datetime import datetime, timezone, timedelta
-from typing import Optional, Any, Union
+from typing import Optional, Any, Union, Protocol
+from abc import abstractmethod
 import uuid
 import json
-import logging  # 新增
+import logging
 from mutil_task.utils.event_bus import EventBus, TaskEventType
 from pydantic import (
     BaseModel, 
@@ -14,15 +15,20 @@ from pydantic import (
     model_validator
 )
 
-logger = logging.getLogger(__name__)  # 新增
+logger = logging.getLogger(__name__)
+
+# ============================================================================
+# 枚举定义层 - 定义任务状态和优先级枚举
+# ============================================================================
 
 class TaskStatus(Enum):
-    PENDING = 1
-    QUEUED = 2
-    RUNNING = 3
-    COMPLETED = 4
-    FAILED = 5
-    CANCELLED = 6
+    """任务状态枚举 - 定义任务的6种生命周期状态"""
+    PENDING = 1    # 等待入队
+    QUEUED = 2     # 已加入队列
+    RUNNING = 3    # 正在执行
+    COMPLETED = 4  # 成功完成
+    FAILED = 5     # 执行失败
+    CANCELLED = 6  # 已取消
 
     @classmethod
     def from_string(cls, status_str: str) -> 'TaskStatus':
@@ -36,36 +42,86 @@ class TaskStatus(Enum):
         """标准化状态输出"""
         return self.name.lower()
 
+
 class TaskPriority(Enum):
-    CRITICAL = 0  # 最高优先级
-    HIGH = 1
-    NORMAL = 2
-    LOW = 3  # 最低优先级
+    """任务优先级枚举 - 定义4级优先级，数值越小优先级越高"""
+    CRITICAL = 0  # 最高优先级 - 紧急任务
+    HIGH = 1      # 高优先级 - 重要任务
+    NORMAL = 2    # 普通优先级 - 常规任务
+    LOW = 3       # 低优先级 - 后台任务
 
     @classmethod
     def from_int(cls, priority: int) -> 'TaskPriority':
+        """从整数值创建优先级枚举"""
         if priority not in [p.value for p in cls]:
             raise ValueError(f"无效优先级值: {priority}")
         return cls(priority)
 
-class Task(BaseModel):
-    id: str = Field(default_factory=lambda: f"task_{uuid.uuid4().hex}")
-    title: str = Field(..., max_length=100, description="任务标题")
-    description: str = Field("", max_length=500, description="任务描述")
-    progress: float = Field(0.0, ge=0.0, le=1.0, description="任务进度百分比")
-    queue_position: Optional[int] = Field(None, description="队列位置")
-    queue_total: Optional[int] = Field(None, description="队列总数")
-    status: TaskStatus = Field(default=TaskStatus.PENDING, description="任务状态")
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+class TaskExecutor(Protocol):
+    """任务执行器协议 - 支持自定义任务执行逻辑"""
+    
+    @abstractmethod
+    def execute_task(self, task: 'Task') -> Any:
+        """执行任务并返回结果"""
+        pass
+
+
+# ============================================================================
+# Task类 - 任务数据模型和业务逻辑
+# ============================================================================
+
+class Task(BaseModel):
+    """
+    任务模型 - 基于Pydantic的任务数据模型和业务逻辑封装
+    采用三层架构：数据属性层、业务操作层、内部支持层
+    """
+    
+    # ==================== 数据属性层 ====================
+    # 定义任务的所有数据字段和验证规则
+    
+    # 基础标识信息
+    id: str = Field(default_factory=lambda: f"task_{uuid.uuid4().hex}", 
+                   description="任务唯一标识符")
+    title: str = Field(..., max_length=100, description="任务标题")
+    description: str = Field("", max_length=500, description="任务详细描述")
+    
+    # 状态和进度信息
+    status: TaskStatus = Field(default=TaskStatus.PENDING, description="任务当前状态")
+    progress: float = Field(0.0, ge=0.0, le=1.0, description="任务进度百分比(0.0-1.0)")
+    
+    # 队列信息
+    queue_position: Optional[int] = Field(None, description="任务在队列中的位置")
+    queue_total: Optional[int] = Field(None, description="队列中总任务数")
+    
+    # 优先级配置
     priority: TaskPriority = Field(
         default=TaskPriority.NORMAL,
         description="任务优先级(CRITICAL=0最高,HIGH=1,NORMAL=2,LOW=3最低)"
     )
-
+    
+    # 时间戳信息
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="任务创建时间(UTC)"
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="任务最后更新时间(UTC)"
+    )
+    
+    # 执行器配置（不参与序列化）
+    executor: Optional[Any] = Field(default=None, exclude=True)
+    
+    # Pydantic模型配置
     model_config = ConfigDict(
         populate_by_name=True,
+        arbitrary_types_allowed=True,
+        json_encoders={
+            datetime: lambda dt: dt.isoformat(),
+            TaskStatus: lambda status: status.name.lower(),
+            TaskPriority: lambda priority: priority.value
+        },
         json_schema_extra={
             "example": {
                 "id": "task_3fa85f6457174562b3fc2c963f66afa6",
@@ -74,10 +130,13 @@ class Task(BaseModel):
             }
         }
     )
-
+    
+    # ==================== 数据验证器 ====================
+    # Pydantic验证器，确保数据完整性和一致性
+    
     @field_validator('status', mode='before')
     def validate_status(cls, value: Any) -> TaskStatus:
-        """增强状态验证器"""
+        """增强状态验证器 - 支持多种输入格式"""
         def convert_status(v: Any) -> TaskStatus:
             if isinstance(v, str):
                 return TaskStatus.from_string(v)
@@ -90,26 +149,10 @@ class Task(BaseModel):
             raise TypeError(f"不支持的状态类型: {type(v)}")
 
         return convert_status(value)
-        
-    def __setattr__(self, name, value):
-        """重写属性设置方法，用于捕获状态变更"""
-        if name == 'status' and hasattr(self, 'status'):
-            old_status = self.status
-            super().__setattr__(name, value)
-            # 发布状态变更事件
-            if old_status != value:
-                EventBus.publish(TaskEventType.STATUS_CHANGED, {
-                    'task': self,
-                    'old_status': old_status,
-                    'new_status': value,
-                    'timestamp': datetime.now(timezone.utc)
-                })
-        else:
-            super().__setattr__(name, value)
 
     @field_validator('created_at', 'updated_at', mode='before')
     def parse_datetime(cls, value: Any) -> datetime:
-        """严格时区转换器（强制UTC）"""
+        """严格时区转换器 - 强制使用UTC时区"""
         try:
             if isinstance(value, str):
                 dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
@@ -126,7 +169,7 @@ class Task(BaseModel):
 
     @model_validator(mode='before')
     def check_timestamps(cls, values):
-        """时间戳逻辑验证（Pydantic V2兼容）"""
+        """时间戳逻辑验证 - 确保更新时间不早于创建时间"""
         if isinstance(values, dict):
             created = values.get('created_at')
             updated = values.get('updated_at')
@@ -136,7 +179,7 @@ class Task(BaseModel):
 
     @field_validator('priority', mode='before')
     def validate_priority(cls, value: Any) -> TaskPriority:
-        """增强型优先级验证器"""
+        """增强型优先级验证器 - 支持多种输入格式"""
         try:
             if isinstance(value, str) and value.isdigit():
                 return TaskPriority.from_int(int(value))
@@ -150,60 +193,32 @@ class Task(BaseModel):
         raise TypeError(
             f"优先级需为整数/枚举/数字字符串，收到: {type(value)}"
         )
-
-    def model_dump(self, *args, **kwargs) -> dict:
-        """安全序列化"""
-        return {
-            "id": self.id,
-            "title": self.title,
-            "description": self.description,
-            "progress": round(self.progress * 100, 2),
-            "queue_position": self.queue_position,
-            "queue_total": self.queue_total,
-            "status": self.status.name.lower(),
-            "priority": self.priority.value,
-            "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat()
-        }
-
-    def model_dump_json(self, *args, **kwargs) -> str:
-        """增强JSON序列化"""
-        return json.dumps(self.model_dump(), ensure_ascii=False, indent=2)
-
-    def _atomic_update_timestamp(self) -> None:
-        """原子时间戳更新"""
-        self.updated_at = datetime.now(timezone.utc)
-        
-    def update_progress(self, progress: float) -> None:
-        """更新任务进度并发布事件"""
-        old_progress = self.progress
-        self.progress = max(0.0, min(1.0, progress))
-        self._atomic_update_timestamp()
-        
-        # 发布进度更新事件
-        EventBus.publish(TaskEventType.PROGRESS_UPDATED, {
-            'task': self,
-            'old_progress': old_progress,
-            'new_progress': self.progress,
-            'timestamp': self.updated_at
-        })
-
+    
+    # ==================== 业务操作层 ====================
+    # 公开的业务方法，供外部调用
+    
     def cancel(self) -> bool:
-        """取消任务（禁止取消已完成任务）"""
+        """
+        取消任务
+        
+        Returns:
+            bool: 取消操作是否成功
+            
+        Raises:
+            ValueError: 状态转移验证失败时抛出
+        """
         if self.status == TaskStatus.COMPLETED:
             logger.warning(f"任务 {self.id} 已完成，取消操作被拒绝")
             return False
 
         try:
-            old_status = self.status
             self._validate_transition(self.status, TaskStatus.CANCELLED)
-            self.status = TaskStatus.CANCELLED
-            self._atomic_update_timestamp()
+            self._set_status(TaskStatus.CANCELLED)
             
             # 发布任务取消事件
             EventBus.publish(TaskEventType.CANCELLED, {
                 'task': self,
-                'old_status': old_status,
+                'old_status': self.status,
                 'timestamp': self.updated_at
             })
             
@@ -213,21 +228,24 @@ class Task(BaseModel):
             return False
 
     def retry_failed_task(self) -> bool:
-        """重试失败任务"""
+        """
+        重试失败任务 - 将失败任务重新加入队列
+        
+        Returns:
+            bool: 重试操作是否成功
+        """
         if self.status != TaskStatus.FAILED:
             logger.error(f"任务 {self.id} 当前状态 {self.status.name} 不可重试")
             return False
 
         try:
-            old_status = self.status
             self._validate_transition(self.status, TaskStatus.QUEUED)
-            self.status = TaskStatus.QUEUED
-            self._atomic_update_timestamp()
+            self._set_status(TaskStatus.QUEUED)
             
             # 发布任务重试事件
             EventBus.publish(TaskEventType.STATUS_CHANGED, {
                 'task': self,
-                'old_status': old_status,
+                'old_status': TaskStatus.FAILED,
                 'new_status': self.status,
                 'timestamp': self.updated_at,
                 'is_retry': True
@@ -238,8 +256,95 @@ class Task(BaseModel):
             logger.error(f"任务重试失败: {str(e)}")
             return False
 
+    def execute(self) -> Any:
+        """
+        执行任务 - 支持自定义执行器
+        
+        Returns:
+            Any: 任务执行结果
+            
+        Raises:
+            ValueError: 任务不在RUNNING状态时抛出
+        """
+        if self.executor:
+            return self.executor.execute_task(self)
+        else:
+            return self._default_execute()
+
+    def update_progress(self, progress: float) -> None:
+        """
+        更新任务进度并发布进度更新事件
+        
+        Args:
+            progress: 进度值(0.0-1.0)
+        """
+        old_progress = self.progress
+        self.progress = max(0.0, min(1.0, progress))
+        self._update_timestamp()
+        
+        # 发布进度更新事件
+        EventBus.publish(TaskEventType.PROGRESS_UPDATED, {
+            'task': self,
+            'old_progress': old_progress,
+            'new_progress': self.progress,
+            'timestamp': self.updated_at
+        })
+
+    def set_executor(self, executor: TaskExecutor) -> None:
+        """
+        设置任务执行器
+        
+        Args:
+            executor: 实现TaskExecutor协议的执行器对象
+        """
+        self.executor = executor
+    
+    # ==================== 内部支持层 ====================
+    # 私有方法，支持业务操作层的实现
+    
+    def _set_status(self, new_status: TaskStatus) -> None:
+        """
+        原子化状态设置方法 - 状态变更、时间戳更新、事件发布一体化
+        
+        Args:
+            new_status: 新状态
+        """
+        old_status = self.status
+        if old_status != new_status:
+            super().__setattr__('status', new_status)
+            self._update_timestamp()
+            self._publish_status_change(old_status, new_status)
+    
+    def _publish_status_change(self, old_status: TaskStatus, new_status: TaskStatus) -> None:
+        """
+        统一发布状态变更事件
+        
+        Args:
+            old_status: 旧状态
+            new_status: 新状态
+        """
+        EventBus.publish(TaskEventType.STATUS_CHANGED, {
+            'task': self,
+            'old_status': old_status,
+            'new_status': new_status,
+            'timestamp': self.updated_at
+        })
+
+    def _update_timestamp(self) -> None:
+        """统一时间戳更新"""
+        self.updated_at = datetime.now(timezone.utc)
+
     def _validate_transition(self, current: TaskStatus, new: TaskStatus) -> None:
-        """核心状态转移验证"""
+        """
+        核心状态转移验证 - 基于状态转移矩阵
+        
+        Args:
+            current: 当前状态
+            new: 目标状态
+            
+        Raises:
+            ValueError: 状态转移不合法时抛出
+        """
         TRANSITION_MATRIX = {
             TaskStatus.PENDING: {TaskStatus.QUEUED, TaskStatus.CANCELLED},
             TaskStatus.QUEUED: {TaskStatus.RUNNING, TaskStatus.CANCELLED},
@@ -256,9 +361,41 @@ class Task(BaseModel):
                 f"允许操作: {allowed}"
             )
 
+    def _default_execute(self) -> Any:
+        """
+        默认执行逻辑 - 保持向后兼容的简单实现
+        
+        Returns:
+            dict: 执行结果
+            
+        Raises:
+            ValueError: 任务不在RUNNING状态时抛出
+        """
+        # 基础验证
+        if self.status != TaskStatus.RUNNING:
+            raise ValueError(f"任务必须在RUNNING状态才能执行，当前状态: {self.status.name}")
+        
+        # 最简单的执行逻辑 - 模拟工作
+        import time
+        time.sleep(2)  # 固定2秒模拟
+        
+        # 返回简单结果
+        return {
+            "task_id": self.id,
+            "status": "completed", 
+            "message": f"任务 {self.title} 执行完成"
+        }
 
-# 示例使用
+
+# ============================================================================
+# 示例使用和测试代码
+# ============================================================================
+
 if __name__ == "__main__":
+    """
+    任务模型使用示例 - 演示核心功能
+    """
+    
     # 创建测试任务
     task = Task(title="测试任务", description="状态机验证测试")
     print("初始状态:", task.status)
@@ -279,11 +416,12 @@ if __name__ == "__main__":
     EventBus.subscribe(TaskEventType.CANCELLED, on_task_cancelled)
     
     # 尝试取消已完成任务
-    task.status = TaskStatus.COMPLETED
+    task._set_status(TaskStatus.COMPLETED)
     print("尝试取消已完成任务:", task.cancel())
     
     # 重试失败任务
-    failed_task = Task(title="失败任务", status=TaskStatus.FAILED)
+    failed_task = Task(title="失败任务")
+    failed_task._set_status(TaskStatus.FAILED)
     print("重试失败任务:", failed_task.retry_failed_task())
     
     # 更新进度
