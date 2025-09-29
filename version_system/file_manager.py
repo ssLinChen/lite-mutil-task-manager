@@ -47,7 +47,15 @@ class FileManager:
         lines = content.split('\n')
         title = next((line for line in lines if line.startswith('# 版本')), '')
         time_line = next((line for line in lines if line.startswith('**时间**:')), '')
-        change_line = next((line for line in lines if line.startswith('**变更**:')), '')
+        
+        # 提取Git证据信息
+        git_evidence_line = next((line for line in lines if line.startswith('- `') and '` -' in line), '')
+        if git_evidence_line:
+            # 使用Git证据作为变更描述
+            change_line = f"**变更**: {git_evidence_line}"
+        else:
+            # 如果没有Git证据，使用原始变更描述
+            change_line = next((line for line in lines if line.startswith('**变更**:')), '')
         
         # 生成变更日志条目
         changelog_entry = f"""
