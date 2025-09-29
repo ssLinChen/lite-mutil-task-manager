@@ -3,6 +3,7 @@ import json
 import time
 import os
 import subprocess
+import argparse
 from git import Repo, GitCommandError
 from datetime import datetime
 import logging
@@ -42,8 +43,13 @@ class GitHubSyncer:
         repo.config_writer().set_value(
             "user", "email", self.config['user']['email']).release()
 
-    def _generate_commit_msg(self):
+    def _generate_commit_msg(self, custom_message=None):
         """生成提交信息"""
+        # 优先使用命令行参数提供的消息
+        if custom_message:
+            return custom_message
+        
+        # 否则使用配置文件中的模板
         template = self.config['commit']['messageTemplate']
         if self.config['commit']['includeTimestamp']:
             return template.format(timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
@@ -113,7 +119,7 @@ class GitHubSyncer:
             logging.warning(f"检查仓库存在性异常: {e}")
             return False
 
-    def sync(self):
+    def sync(self, commit_message=None):
         """执行同步操作"""
         # 初始化仓库
         try:
@@ -153,7 +159,7 @@ class GitHubSyncer:
 
                 # 提交更改
                 if self.repo.is_dirty() or self.repo.untracked_files:
-                    commit_msg = self._generate_commit_msg()
+                    commit_msg = self._generate_commit_msg(commit_message)
                     self.repo.index.commit(commit_msg)
                     logging.info(f"已提交更改: {commit_msg}")
                 else:
@@ -267,11 +273,21 @@ class GitHubSyncer:
                 logging.info(f"等待 {wait_time} 秒后重试...")
                 time.sleep(wait_time)
 
-if __name__ == '__main__':
+def main():
+    """命令行入口函数"""
+    parser = argparse.ArgumentParser(description='GitHub同步工具')
+    parser.add_argument('-m', '--message', type=str, 
+                       help='自定义提交消息，例如：-m "实现了完整的版本记录自动化流程"')
+    
+    args = parser.parse_args()
+    
     try:
         syncer = GitHubSyncer()
-        syncer.sync()
+        syncer.sync(commit_message=args.message)
     except Exception as e:
         if syncer.config['errorHandling']['showDetails']:
             logging.exception("错误详情")
         exit(1)
+
+if __name__ == '__main__':
+    main()

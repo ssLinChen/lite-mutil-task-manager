@@ -1,0 +1,138 @@
+"""
+Git集成模块
+简化的Git信息提取和Hook管理
+保持向后兼容
+"""
+
+from git import Repo
+import os
+
+
+class GitIntegration:
+    """Git集成管理器"""
+    
+    def __init__(self, repo_path='..'):
+        """
+        初始化Git集成器
+        
+        Args:
+            repo_path: Git仓库路径，默认为父目录（项目根目录）
+        """
+        try:
+            self.repo = Repo(repo_path)
+            self.has_git = True
+        except Exception:
+            self.has_git = False
+            print("警告: 未找到有效的Git仓库，将使用默认Git信息")
+    
+    def get_commit_info(self) -> dict:
+        """
+        获取提交信息（简化版）
+        
+        Returns:
+            dict: 包含提交哈希、消息和修改文件的信息
+        """
+        if not self.has_git:
+            import datetime
+            return {
+                'hash': 'local',
+                'message': f'Auto-commit at {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}',
+                'files': ['sync.log']
+            }
+            
+        try:
+            commit = self.repo.head.commit
+            return {
+                'hash': commit.hexsha[:7],
+                'message': commit.message.strip(),
+                'files': list(commit.stats.files.keys())[:5]  # 最多显示5个文件
+            }
+        except Exception:
+            return {
+                'hash': 'unknown',
+                'message': '无法获取提交信息',
+                'files': []
+            }
+    
+    def get_modified_files(self) -> list:
+        """
+        获取工作区中修改的文件列表
+        
+        Returns:
+            list: 修改的文件路径列表
+        """
+        try:
+            # 获取未暂存的修改
+            modified = [item.a_path for item in self.repo.index.diff(None)]
+            # 获取未跟踪的文件
+            untracked = self.repo.untracked_files
+            return modified + untracked
+        except Exception:
+            return []
+    
+    def setup_hooks(self) -> bool:
+        """
+        设置Git Hook（简化版）
+        
+        Returns:
+            bool: 是否成功设置Hook
+        """
+        if not self.has_git:
+            print("无法设置Git Hook：未找到Git仓库")
+            return False
+            
+        try:
+            hooks_dir = os.path.join(self.repo.git_dir, 'hooks')
+            post_commit_hook = os.path.join(hooks_dir, 'post-commit')
+            
+            # 创建post-commit hook脚本
+            hook_script = """#!/bin/bash
+# 自动触发的版本记录Hook
+cd "$(dirname "$0")/../.."
+python version_system/main.py --auto-record
+"""
+            
+            with open(post_commit_hook, 'w', encoding='utf-8') as f:
+                f.write(hook_script)
+            
+            # 设置执行权限
+            os.chmod(post_commit_hook, 0o755)
+            print(f"✅ Git Hook已设置: {post_commit_hook}")
+            return True
+            
+        except Exception as e:
+            print(f"❌ 设置Git Hook失败: {e}")
+            return False
+    
+    def validate_repository(self) -> bool:
+        """验证当前目录是否为有效的Git仓库"""
+        if not hasattr(self, 'has_git') or not self.has_git:
+            return True
+            
+        try:
+            return not self.repo.bare and hasattr(self.repo, 'git_dir')
+        except Exception:
+            return False
+    
+    # 向后兼容的方法
+    def get_latest_commit(self) -> dict:
+        """向后兼容：获取最新提交信息"""
+        return self.get_commit_info()
+    
+    def get_branch_info(self) -> dict:
+        """向后兼容：获取分支信息"""
+        try:
+            branch = self.repo.active_branch
+            return {
+                'name': branch.name,
+                'is_dirty': self.repo.is_dirty(),
+                'ahead': len(list(self.repo.iter_commits(f'{branch.name}@{{u}}..{branch.name}'))),
+                'behind': len(list(self.repo.iter_commits(f'{branch.name}..{branch.name}@{{u}}')))
+            }
+        except Exception:
+            return {
+                'name': 'unknown',
+                'is_dirty': False,
+                'ahead': 0,
+                'behind': 0
+            }
