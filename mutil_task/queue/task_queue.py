@@ -1,4 +1,5 @@
 from mutil_task.core.task import Task, TaskStatus, TaskPriority
+from mutil_task.utils.queue_position_service import QueuePositionService
 import heapq
 import threading
 from concurrent.futures import ThreadPoolExecutor
@@ -13,6 +14,7 @@ class TaskQueue:
         self._executor = ThreadPoolExecutor(max_workers)
         self._active_tasks = {}
         self._completed_tasks = {}
+        self.position_service = QueuePositionService(self)
 
     def enqueue(self, task: Task):
         """
@@ -24,16 +26,17 @@ class TaskQueue:
             if task.status != TaskStatus.PENDING:
                 raise ValueError(f"只有PENDING状态的任务可以入队，当前状态: {task.status.name}")
             
-            # 更新任务状态和位置
+            # 更新任务状态
             task.status = TaskStatus.QUEUED
-            task.queue_position = len(self._heap) + 1
-            task.queue_total = len(self._heap) + 1
             task.updated_at = datetime.now(timezone.utc)
             
             # 存入优先队列（数值越小优先级越高）
             # 使用task.priority.value而非负值，因为TaskPriority枚举已经定义了HIGH=1, MEDIUM=2, LOW=3
             heapq.heappush(self._heap, (task.priority.value, task.id, task))
             self._executor.submit(self._run_task)
+        
+        # 队列结构变化，失效位置缓存
+        self.position_service.invalidate_cache()
 
     def _run_task(self):
         """执行队列中的任务"""
@@ -53,6 +56,9 @@ class TaskQueue:
                     heapq.heappush(self._heap, (task.priority.value, task.id, task))
                     self._active_tasks.pop(task_id, None)
                     return
+        
+        # 任务出队，失效位置缓存
+        self.position_service.invalidate_cache()
 
         try:
             # 更新任务状态
@@ -96,20 +102,26 @@ class TaskQueue:
         :param task_id: 任务ID
         :return: 是否取消成功
         """
+        cancelled = False
         with self._lock:
             # 从队列中移除
             for i, (_, tid, task) in enumerate(self._heap):
                 if tid == task_id:
                     task = self._heap.pop(i)[2]
                     heapq.heapify(self._heap)
-                    return task.cancel()
+                    cancelled = task.cancel()
+                    break
             
             # 取消执行中的任务
-            if task_id in self._active_tasks:
+            if not cancelled and task_id in self._active_tasks:
                 task = self._active_tasks[task_id]
-                return task.cancel()
+                cancelled = task.cancel()
+        
+        # 如果任务被取消且从队列中移除，失效缓存
+        if cancelled:
+            self.position_service.invalidate_cache()
                 
-        return False
+        return cancelled
 
     def get_task_status(self, task_id: str) -> Optional[TaskStatus]:
         """
@@ -132,6 +144,20 @@ class TaskQueue:
                     return task.status
                     
         return None
+
+    def get_task_position(self, task_id: str) -> tuple:
+        """
+        获取任务在队列中的位置信息
+        
+        Args:
+            task_id: 任务ID
+            
+        Returns:
+            tuple: (位置序号, 队列总长度)
+            - 位置序号: 任务在队列中的位置（1-based），None表示不在队列中
+            - 队列总长度: 当前队列中的任务总数
+        """
+        return self.position_service.get_position(task_id)
 
     def __enter__(self):
         return self

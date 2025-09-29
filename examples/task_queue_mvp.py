@@ -261,11 +261,27 @@ def run_mvp():
  
             # 同时尝试使用Rich渲染
             try:
-                render_full_panel(current_tasks)
+                render_full_panel(current_tasks, queue)
             except Exception as e:
                 print(f"Rich渲染失败: {str(e)}")
-                print(f"当前状态: {len(queue._heap)}等待 | {len(queue._active_tasks)}执行中 | "
-                      f"已完成: {len(queue._completed_tasks)}")
+                
+            # 显示准确的队列位置信息
+            queued_tasks = []
+            for task in current_tasks:
+                if task.status == TaskStatus.QUEUED:
+                    position, total = queue.get_task_position(task.id)
+                    if position is not None:
+                        queued_tasks.append(f"{task.title}: 排队中({position}/{total})")
+                    else:
+                        queued_tasks.append(f"{task.title}: 不在队列中")
+            
+            if queued_tasks:
+                print("队列状态:")
+                for task_info in queued_tasks:
+                    print(f"  {task_info}")
+            
+            print(f"当前状态: {len(queue._heap)}等待 | {len(queue._active_tasks)}执行中 | "
+                  f"已完成: {len(queue._completed_tasks)}")
     
     # 最终结果统计
     print("\n" + "=" * 50)

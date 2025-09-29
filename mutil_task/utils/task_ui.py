@@ -24,7 +24,7 @@ def get_progress_bar(progress: float, width: int = 10) -> str:
     filled = int(progress * width)
     return f"{PROGRESS_BLOCKS[0] * filled} {progress*100:.0f}%"
 
-def get_status_display(task: Task) -> str:
+def get_status_display(task: Task, queue=None) -> str:
     """确保队列位置正确显示"""
     status = task.status
     if isinstance(status, int):
@@ -35,8 +35,18 @@ def get_status_display(task: Task) -> str:
     
     # 特别处理排队状态
     if status == TaskStatus.QUEUED:
-        pos = task.queue_position if hasattr(task, 'queue_position') else 0
-        total = task.queue_total if hasattr(task, 'queue_total') else 0
+        # 如果有queue参数，使用position_service获取准确位置
+        if queue and hasattr(queue, 'get_task_position'):
+            try:
+                position, total = queue.get_task_position(task.id)
+                if position is not None:
+                    return f"🟡排队中({position}/{total})"
+            except:
+                pass  # 如果获取失败，回退到默认显示
+        
+        # 回退到任务对象的属性（可能不准确）
+        pos = getattr(task, 'queue_position', 0)
+        total = getattr(task, 'queue_total', 0)
         return f"🟡排队中({pos}/{total})"
     
     status_map = {
@@ -73,7 +83,7 @@ from rich.panel import Panel
 from rich.progress import BarColumn, Progress
 from rich.text import Text
 
-def render_full_panel(tasks: list[Task]):
+def render_full_panel(tasks: list[Task], queue=None):
     """使用Rich渲染自动调整列宽的任务面板"""
     console = Console()
     table = Table(
@@ -99,7 +109,7 @@ def render_full_panel(tasks: list[Task]):
             task.id[:6],
             Text(task.title[:16]),
             progress,
-            Text(get_status_display(task), style=status_style(task.status)),
+            Text(get_status_display(task, queue), style=status_style(task.status)),
             format_timestamp(task.created_at),
             format_timestamp(task.updated_at)
         ]
