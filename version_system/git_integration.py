@@ -11,16 +11,31 @@ import os
 class GitIntegration:
     """Git集成管理器"""
     
-    def __init__(self, repo_path='..'):
+    def __init__(self, repo_path=None):
         """
         初始化Git集成器
         
         Args:
-            repo_path: Git仓库路径，默认为父目录（项目根目录）
+            repo_path: Git仓库路径，如果为None则自动检测
         """
         try:
-            self.repo = Repo(repo_path)
-            self.has_git = True
+            if repo_path is None:
+                # 尝试从当前目录向上查找Git仓库
+                current_dir = os.getcwd()
+                while current_dir and current_dir != os.path.dirname(current_dir):
+                    git_dir = os.path.join(current_dir, '.git')
+                    if os.path.exists(git_dir):
+                        self.repo = Repo(current_dir)
+                        self.has_git = True
+                        break
+                    current_dir = os.path.dirname(current_dir)
+                else:
+                    # 如果没找到，尝试当前目录
+                    self.repo = Repo('.')
+                    self.has_git = True
+            else:
+                self.repo = Repo(repo_path)
+                self.has_git = True
         except Exception:
             self.has_git = False
             print("警告: 未找到有效的Git仓库，将使用默认Git信息")
