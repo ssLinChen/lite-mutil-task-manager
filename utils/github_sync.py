@@ -218,14 +218,6 @@ class GitHubSyncer:
                     # 执行提交（让Git正常执行pre-commit钩子）
                     self.repo.git.commit('-m', commit_msg)
                     logging.info(f"已提交更改: {commit_msg}")
-                    
-                    # 手动执行pre-commit钩子
-                    hook_path = os.path.join(self.repo.git_dir, 'hooks', 'pre-commit')
-                    if os.path.exists(hook_path):
-                        logging.info("检测到pre-commit钩子，尝试手动执行")
-                        hook_success = safe_run_hook(hook_path)
-                        if not hook_success:
-                            logging.warning("pre-commit钩子执行失败，但继续执行")
                 else:
                     logging.info("没有需要提交的更改")
 
