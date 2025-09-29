@@ -10,58 +10,6 @@ import logging
 import re
 import sys
 
-# 安全执行钩子的函数
-def safe_run_hook(hook_path):
-    """安全执行钩子的方法（完全Windows原生）"""
-    try:
-        logging.info(f"使用Windows原生方式执行钩子: {hook_path}")
-        
-        # Windows兼容处理：优先使用.bat扩展名的钩子文件
-        if os.name == 'nt':
-            # 获取文件扩展名
-            _, ext = os.path.splitext(hook_path)
-            if not ext:
-                # 检查是否存在对应的.bat文件
-                bat_path = f"{hook_path}.bat"
-                if os.path.exists(bat_path):
-                    logging.info(f"找到对应的.bat文件: {bat_path}")
-                    hook_path = bat_path
-                else:
-                    # 如果不存在.bat文件，检查原始文件是否存在
-                    if not os.path.exists(hook_path):
-                        logging.warning(f"钩子文件不存在: {hook_path}")
-                        return False
-                    
-                    # 直接读取文件内容并创建.bat文件
-                    try:
-                        # 使用二进制模式读取，避免编码问题
-                        with open(hook_path, 'rb') as f:
-                            content = f.read()
-                        
-                        # 创建批处理文件
-                        with open(bat_path, 'wb') as f:
-                            f.write(content)
-                        
-                        logging.info(f"创建批处理文件: {bat_path}")
-                        hook_path = bat_path
-                    except Exception as e:
-                        logging.warning(f"创建批处理文件失败: {str(e)}")
-                        return False
-        
-        # 使用Windows原生CMD执行
-        result = subprocess.run(
-            ['cmd.exe', '/C', hook_path],
-            capture_output=True,
-            text=True
-        )
-        if result.returncode != 0:
-            logging.warning(f"钩子执行返回非零状态: {result.returncode}")
-            logging.warning(f"钩子错误输出: {result.stderr}")
-            return False
-        return True
-    except Exception as e:
-        logging.error(f"钩子执行异常: {str(e)}")
-        return False
 
 # 初始化日志
 logging.basicConfig(

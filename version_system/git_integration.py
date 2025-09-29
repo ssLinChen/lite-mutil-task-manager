@@ -85,39 +85,7 @@ class GitIntegration:
         except Exception:
             return []
     
-    def setup_hooks(self) -> bool:
-        """
-        设置Git Hook（简化版）
-        
-        Returns:
-            bool: 是否成功设置Hook
-        """
-        if not self.has_git:
-            print("无法设置Git Hook：未找到Git仓库")
-            return False
-            
-        try:
-            hooks_dir = os.path.join(self.repo.git_dir, 'hooks')
-            post_commit_hook = os.path.join(hooks_dir, 'pre-commit')
-            
-            # 创建pre-commit hook脚本
-            hook_script = """#!/bin/bash
-# 自动触发的版本记录Hook
-cd "$(dirname "$0")/../.."
-python version_system/main.py --auto-record
-"""
-            
-            with open(post_commit_hook, 'w', encoding='utf-8') as f:
-                f.write(hook_script)
-            
-            # 设置执行权限
-            os.chmod(post_commit_hook, 0o755)
-            print(f"✅ Git Hook已设置: {post_commit_hook}")
-            return True
-            
-        except Exception as e:
-            print(f"❌ 设置Git Hook失败: {e}")
-            return False
+
     
     def validate_repository(self) -> bool:
         """验证当前目录是否为有效的Git仓库"""

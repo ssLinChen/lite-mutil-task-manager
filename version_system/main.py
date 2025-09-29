@@ -28,9 +28,6 @@ class VersionSystem:
         self.recorder = SmartRecorder()
         self.git_integration = GitIntegration()
         self.file_manager = FileManager()
-        
-        # 最后设置Git Hook
-        self.setup_git_hooks()
     
     def process_snapshot_command(self, user_input: str) -> dict:
         """
@@ -84,16 +81,7 @@ class VersionSystem:
             self.logger.error(f"处理命令时出错: {e}")
             return {'success': False, 'error': str(e)}
     
-    def setup_git_hooks(self):
-        """设置Git Hook"""
-        try:
-            hook_success = self.git_integration.setup_hooks()
-            if hook_success:
-                self.logger.info("Git Hook设置成功")
-            else:
-                self.logger.warning("Git Hook设置失败或未找到Git仓库")
-        except Exception as e:
-            self.logger.warning(f"Git Hook设置失败: {e}")
+
     
     def list_versions(self) -> list:
         """列出所有版本记录"""
