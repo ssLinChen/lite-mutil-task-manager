@@ -110,21 +110,34 @@ class VersionSystem:
 
 def main():
     """命令行入口函数"""
-    if len(sys.argv) < 2:
-        print("用法: python main.py /snapshot -m 描述")
-        print("示例: python main.py '/snapshot -m 修复面板进度异常问题")
-        print("自动记录: python main.py --auto-record")
-        return
+    parser = argparse.ArgumentParser(description='智能版本记录系统')
+    parser.add_argument('-m', '--message', type=str, 
+                       help='自定义提交消息，例如：-m "实现了完整的版本记录自动化流程"')
+    parser.add_argument('--auto-record', action='store_true',
+                       help='自动记录模式')
     
-    user_input = sys.argv[1]
+    args = parser.parse_args()
+    
     system = VersionSystem()
     
-    # 处理自动记录模式
-    if user_input == '--auto-record':
-        # 自动生成版本记录
+    # 处理参数逻辑
+    if args.message:
+        # 使用-m参数提供的消息
+        user_input = f'/snapshot -m "{args.message}"'
+    elif args.auto_record:
+        # 自动记录模式
         import datetime
         auto_message = f"自动记录提交于 {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}"
         user_input = f'/snapshot -m "{auto_message}"'
+    else:
+        # 如果没有参数，检查是否有位置参数（向后兼容）
+        if len(sys.argv) > 1 and not sys.argv[1].startswith('-'):
+            user_input = sys.argv[1]
+        else:
+            print("用法: python main.py -m \"描述\"")
+            print("示例: python main.py -m \"修复面板进度异常问题\"")
+            print("自动记录: python main.py --auto-record")
+            return
     
     result = system.process_snapshot_command(user_input)
     
