@@ -142,12 +142,17 @@ def main():
     result = system.process_snapshot_command(user_input)
     
     if result['success']:
-        print(f"✅ 版本记录创建成功: {result['version']}")
-        print(f"📁 文件位置: {result['file_path']}")
+        print(f"[SUCCESS] 版本记录创建成功: {result['version']}")
+        print(f"[FILE] 文件位置: {result['file_path']}")
         print("\n预览内容:")
-        print(result['content_preview'])
+        # 过滤content_preview中的Unicode字符，避免编码错误
+        preview = result['content_preview']
+        if preview:
+            # 移除或替换Unicode字符
+            preview = preview.replace('✅', '[SUCCESS]').replace('❌', '[ERROR]').replace('📁', '[FILE]').replace('⚠️', '[WARNING]')
+            print(preview)
     else:
-        print(f"❌ 错误: {result['error']}")
+        print(f"[ERROR] 错误: {result['error']}")
 
 
 if __name__ == '__main__':
