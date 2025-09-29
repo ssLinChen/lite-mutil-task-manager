@@ -16,6 +16,7 @@
 - **🔧 配置化任务** - 支持参数验证和约束检查的任务配置系统
 - **📡 事件驱动架构** - 基于发布-订阅模式的状态变更通知
 - **🔒 线程安全设计** - 关键操作使用锁机制保证线程安全
+- **📍 队列位置服务** - 准确的队列位置显示和实时更新
 
 ## 🛠️ 技术栈
 
@@ -26,6 +27,7 @@
 - **事件系统**: 自定义事件总线
 - **线程同步**: threading.Lock
 - **结果管理**: 结构化结果存储和产物引用
+- **位置服务**: QueuePositionService智能缓存机制
 
 ## 🚀 快速开始
 
@@ -62,14 +64,20 @@ from mutil_task.core.task_result import TaskResult
 queue = TaskQueue(max_workers=2)
 
 # 创建任务
-task = Task(title="数据处理任务", priority=TaskPriority.HIGH)
+task1 = Task(title="高优先级任务", priority=TaskPriority.HIGH)
+task2 = Task(title="普通优先级任务", priority=TaskPriority.NORMAL)
 
 # 添加任务到队列
-queue.enqueue(task)
+queue.enqueue(task1)
+queue.enqueue(task2)
+
+# 获取准确的队列位置信息
+position, total = queue.get_task_position(task1.id)
+print(f"任务在队列中的位置: {position}/{total}")
 
 # 获取任务结果
 result = TaskResult(
-    task_id=task.id,
+    task_id=task1.id,
     execution_id="exec_001",
     status="completed"
 )
@@ -90,7 +98,8 @@ lite-mutil-task-manager/
 │   │   └── task_queue.py         # 优先级任务队列
 │   └── utils/                    # 工具类
 │       ├── event_bus.py          # 事件总线
-│       └── task_ui.py            # 任务可视化界面
+│       ├── task_ui.py            # 任务可视化界面
+│       └── queue_position_service.py  # 队列位置服务
 ├── tests/                        # 单元测试
 │   ├── test_task_config.py       # 任务配置测试
 │   ├── test_task_model.py        # 任务模型测试
@@ -121,6 +130,35 @@ lite-mutil-task-manager/
 - **HIGH (1)** - 高优先级
 - **NORMAL (2)** - 普通优先级（默认）
 - **LOW (3)** - 低优先级
+
+### 队列位置服务
+
+系统提供准确的队列位置显示功能：
+
+```python
+from mutil_task.queue.task_queue import TaskQueue
+
+# 创建队列
+queue = TaskQueue(max_workers=2)
+
+# 添加多个任务
+tasks = []
+for i in range(5):
+    task = Task(title=f"任务{i+1}", priority=TaskPriority.NORMAL)
+    queue.enqueue(task)
+    tasks.append(task)
+
+# 获取每个任务的准确位置
+for task in tasks:
+    position, total = queue.get_task_position(task.id)
+    print(f"任务 {task.title}: 排队中({position}/{total})")
+```
+
+**技术特点**：
+- **批量计算优化**：一次O(n)遍历服务所有显示需求
+- **智能缓存机制**：200ms TTL平衡性能与准确性
+- **线程安全设计**：Lock保护下的原子操作
+- **实时更新**：队列变化时自动失效缓存
 
 ### 任务结果管理
 
@@ -228,4 +266,4 @@ python -m unittest discover tests
 
 ---
 
-*文档最后更新：2025-09-28*
+*文档最后更新：2025-09-29*
