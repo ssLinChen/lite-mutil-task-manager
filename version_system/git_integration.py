@@ -98,9 +98,9 @@ class GitIntegration:
             
         try:
             hooks_dir = os.path.join(self.repo.git_dir, 'hooks')
-            post_commit_hook = os.path.join(hooks_dir, 'post-commit')
+            post_commit_hook = os.path.join(hooks_dir, 'pre-commit')
             
-            # 创建post-commit hook脚本
+            # 创建pre-commit hook脚本
             hook_script = """#!/bin/bash
 # 自动触发的版本记录Hook
 cd "$(dirname "$0")/../.."
