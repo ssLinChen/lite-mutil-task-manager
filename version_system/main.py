@@ -144,13 +144,6 @@ def main():
     if result['success']:
         print(f"[SUCCESS] 版本记录创建成功: {result['version']}")
         print(f"[FILE] 文件位置: {result['file_path']}")
-        print("\n预览内容:")
-        # 过滤content_preview中的Unicode字符，避免编码错误
-        preview = result['content_preview']
-        if preview:
-            # 移除或替换Unicode字符
-            preview = preview.replace('✅', '[SUCCESS]').replace('❌', '[ERROR]').replace('📁', '[FILE]').replace('⚠️', '[WARNING]')
-            print(preview)
     else:
         print(f"[ERROR] 错误: {result['error']}")
 
