@@ -16,57 +16,37 @@ def safe_run_hook(hook_path):
     try:
         logging.info(f"使用Windows原生方式执行钩子: {hook_path}")
         
-        # Windows兼容处理
+        # Windows兼容处理：优先使用.bat扩展名的钩子文件
         if os.name == 'nt':
             # 获取文件扩展名
             _, ext = os.path.splitext(hook_path)
             if not ext:
-                # 直接读取文件内容
-                try:
-                    # 使用二进制模式读取，避免编码问题
-                    with open(hook_path, 'rb') as f:
-                        content = f.read()
+                # 检查是否存在对应的.bat文件
+                bat_path = f"{hook_path}.bat"
+                if os.path.exists(bat_path):
+                    logging.info(f"找到对应的.bat文件: {bat_path}")
+                    hook_path = bat_path
+                else:
+                    # 如果不存在.bat文件，检查原始文件是否存在
+                    if not os.path.exists(hook_path):
+                        logging.warning(f"钩子文件不存在: {hook_path}")
+                        return False
                     
-                    # 创建临时批处理文件
-                    temp_bat = f"{hook_path}.bat"
-                    with open(temp_bat, 'wb') as f:
-                        f.write(content)
-                    
-                    logging.info(f"创建临时批处理文件: {temp_bat}")
-                    hook_path = temp_bat
-                except Exception as e:
-                    logging.warning(f"创建临时批处理文件失败: {str(e)}")
-                    # 如果创建临时文件失败，尝试直接执行脚本内容
+                    # 直接读取文件内容并创建.bat文件
                     try:
-                        # 直接执行脚本内容
-                        current_dir = os.path.dirname(hook_path)
-                        hook_name = os.path.basename(hook_path)
+                        # 使用二进制模式读取，避免编码问题
+                        with open(hook_path, 'rb') as f:
+                            content = f.read()
                         
-                        # 切换到钩子所在目录
-                        original_dir = os.getcwd()
-                        os.chdir(current_dir)
+                        # 创建批处理文件
+                        with open(bat_path, 'wb') as f:
+                            f.write(content)
                         
-                        # 执行命令
-                        cmd = f"cd /d \"{os.path.dirname(os.path.abspath(hook_path))}\\..\\..\" && python version_system/main.py --auto-record && git add ."
-                        logging.info(f"直接执行命令: {cmd}")
-                        
-                        result = subprocess.run(
-                            cmd,
-                            shell=True,
-                            capture_output=True,
-                            text=True
-                        )
-                        
-                        # 恢复原目录
-                        os.chdir(original_dir)
-                        
-                        if result.returncode != 0:
-                            logging.warning(f"直接执行命令返回非零状态: {result.returncode}")
-                            logging.warning(f"命令错误输出: {result.stderr}")
-                            return False
-                        return True
+                        logging.info(f"创建批处理文件: {bat_path}")
+                        hook_path = bat_path
                     except Exception as e:
-                        logging.warning(f"直接执行命令失败: {str(e)}")
+                        logging.warning(f"创建批处理文件失败: {str(e)}")
+                        return False
         
         # 使用Windows原生CMD执行
         result = subprocess.run(
