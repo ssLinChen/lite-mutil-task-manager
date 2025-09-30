@@ -1,5 +1,5 @@
-.codebuddy/.rules/rule_cn.mdc
 CHANGELOG.md
 sync.log
+version_system/__pycache__/file_manager.cpython-313.pyc
 version_system/file_manager.py
-versions/v0.0.1.md
+versions/v0.0.2.md

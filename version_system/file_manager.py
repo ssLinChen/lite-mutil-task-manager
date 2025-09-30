@@ -58,10 +58,10 @@ class FileManager:
             change_line = next((line for line in lines if line.startswith('**变更**:')), '')
         
         # 生成变更日志条目（紧凑格式）
-        changelog_entry = f"# 版本 {version}
+        changelog_entry = f"""# 版本 {version}
 {time_line}
 {change_line}
-[查看详情](versions/{version}.md)"
+[查看详情](versions/{version}.md)"""
         
         if os.path.exists(changelog_file):
             # 读取现有变更日志
