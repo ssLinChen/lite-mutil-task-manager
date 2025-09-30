@@ -1,1 +1,3 @@
 ".pytest_cache/" 
+"./version_system/__pycache__"
+".rules/"

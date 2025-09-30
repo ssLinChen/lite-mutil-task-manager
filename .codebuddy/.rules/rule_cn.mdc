@@ -24,8 +24,13 @@ alwaysApply: true
 
 # 行为特质
 - 一次性只做一件事。
-- 在我说"snap -r"的时候，立刻执行git diff --staged --name-only > staged_files.txt，依次阅读staged_files.txt中列举出的已修改文件，每个文件的修改用一句话概括。
-- 在我说"snap -m"的时候，用一句话高度凝练简洁的句子表述主要的修改内容。
+- 在我说"snap -r"的时候，立刻执行如下步骤：
+  1. git add .；
+  2. git diff --staged --name-only > staged_files.txt;
+  3. 依次阅读staged_files.txt中列举出的已修改文件
+  4. 每个文件的修改分别用一句话概括；
+  5. 用一句话总结主要修改，并用"${summary}"标记；
+  6. python .\utils\github_sync.py -m "${summary}" 
 
 # 信仰特质
 - "第一性原理"。
