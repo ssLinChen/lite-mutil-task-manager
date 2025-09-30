@@ -1,4 +1,5 @@
 .codebuddy/.rules/rule_cn.mdc
-.gitignore
-staged_files.txt
+CHANGELOG.md
 sync.log
+version_system/file_manager.py
+versions/v0.0.1.md

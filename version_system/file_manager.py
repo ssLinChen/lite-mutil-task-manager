@@ -57,15 +57,11 @@ class FileManager:
             # 如果没有Git证据，使用原始变更描述
             change_line = next((line for line in lines if line.startswith('**变更**:')), '')
         
-        # 生成变更日志条目
-        changelog_entry = f"""
-{title}
-
+        # 生成变更日志条目（紧凑格式）
+        changelog_entry = f"# 版本 {version}
 {time_line}
 {change_line}
-
-[查看详情](versions/{version}.md)
-"""
+[查看详情](versions/{version}.md)"
         
         if os.path.exists(changelog_file):
             # 读取现有变更日志
@@ -73,9 +69,9 @@ class FileManager:
                 existing_content = f.read()
             
             # 在文件开头插入新条目
-            new_content = f"# 变更日志\n\n## {version}\n{changelog_entry}\n\n{existing_content.split('# 变更日志', 1)[-1]}"
+            new_content = f"# 变更日志\n\n{changelog_entry}\n\n{existing_content.split('# 变更日志', 1)[-1]}"
         else:
-            new_content = f"# 变更日志\n\n## {version}\n{changelog_entry}"
+            new_content = f"# 变更日志\n\n{changelog_entry}"
         
         with open(changelog_file, 'w', encoding='utf-8') as f:
             f.write(new_content)
