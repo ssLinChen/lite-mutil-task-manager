@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Any
+import numpy as np
 sys.path.append(str(Path(__file__).parent.parent))  # 添加项目根目录到路径
 
 from mutil_task.core.task import Task, TaskPriority, TaskStatus, TaskExecutor
@@ -9,12 +10,25 @@ from mutil_task.utils.event_bus import EventBus
 import threading
 
 class TimedTaskExecutor(TaskExecutor):
-    """支持可中断的定时执行器"""
-    def __init__(self, seconds: int):
-        self.seconds = seconds
+    """支持定时和科学计算的任务执行器"""
+    
+    """增强版定时执行器（支持定时和科学计算两种模式）"""
+    def __init__(self, seconds: int = None):
+        """
+        :param seconds: 总执行秒数（传统模式）
+        """
         self._stop_event = threading.Event()
+        self._computation_func = None
+        self.seconds = seconds
+        self._context = None
         
-    def execute_task(self, task: Task) -> str:
+    def execute_task(self, task: Task) -> Any:
+        if self.seconds:  # 传统时间模式
+            return self._execute_by_time(task)
+        return self._execute_by_steps(task)  # 科学计算模式
+    
+    def _execute_by_time(self, task: Task) -> str:
+        """时间基准执行（兼容旧版）"""
         import time
         start = time.time()
         for i in range(self.seconds):
@@ -25,13 +39,75 @@ class TimedTaskExecutor(TaskExecutor):
             if task.status == TaskStatus.CANCELLED:
                 return "任务取消"
         return f"精确执行: {time.time()-start:.1f}秒"
+    
+    def _execute_by_steps(self, task: Task) -> Any:
+        """步骤基准执行（科学计算模式）"""
+        if not self._computation_func:
+            raise ValueError("未设置科学计算函数")
+            
+        class ComputeContext:
+            def __init__(self, task, stop_event):
+                self.task = task
+                self.stop_event = stop_event
+                self.results = []
+                self.step_count = 0
+                
+            @property
+            def should_stop(self):
+                return (self.stop_event.is_set() or 
+                        self.task.status == TaskStatus.CANCELLED)
+        
+        self._context = ComputeContext(task, self._stop_event)
+        try:
+            return self._computation_func(self._context)
+        finally:
+            self._context = None
         
     def cancel(self):
-        """外部调用以中断任务"""
+        """中断执行（两种模式通用）"""
         self._stop_event.set()
 
 from mutil_task.utils.task_ui import render_full_panel
 import time
+import numpy as np
+
+def matrix_computation(ctx):
+    """矩阵乘法计算示例"""
+    size = 1000
+    A = np.random.rand(size, size)
+    B = np.random.rand(size, size)
+    C = np.zeros((size, size))
+    
+    for i in range(size):
+        if ctx.should_stop:
+            return f"矩阵计算中断于第{i}行"
+        C[i] = np.dot(A[i], B)
+        if i % 100 == 0:  # 每100行更新进度
+            ctx.task.update_progress(i/size)
+    return "矩阵计算完成"
+
+def prime_computation(ctx):
+    """素数计算示例"""
+    max_num = 1000000
+    primes = []
+    
+    for num in range(2, max_num + 1):
+        if ctx.should_stop:
+            return f"素数计算中断于{num}"
+            
+        is_prime = True
+        for i in range(2, int(np.sqrt(num)) + 1):
+            if num % i == 0:
+                is_prime = False
+                break
+                
+        if is_prime:
+            primes.append(num)
+            
+        if num % 10000 == 0:  # 每10000个数更新进度
+            ctx.task.update_progress(num/max_num)
+            
+    return f"找到{len(primes)}个素数"
 
 def run_mvp():
     """任务队列演示流程"""
@@ -71,9 +147,7 @@ def run_mvp():
             executor=TimedTaskExecutor(5)  # 标准执行器实例
         ),
 
-
-        
-        # 正常任务作为对照
+        # 保留原有正常任务
         Task(
             title="正常任务",
             priority=TaskPriority.NORMAL,
