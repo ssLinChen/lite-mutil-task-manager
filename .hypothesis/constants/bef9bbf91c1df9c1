@@ -1,0 +1,4 @@
+# file: c:\Users\10129\CodeBuddy\lite-mutil-task-manager\mutil_task\core\task_result.py
+# hypothesis_version: 6.138.15
+
+['Artifact name', 'ArtifactRef', 'Data cannot be empty', 'Event name', 'Metric name', 'Network', 'System', 'Timeout', 'URI cannot be empty', 'Unknown', 'Validation', '[^a-zA-Z0-9\\-_./:]', 'artifacts_count', 'db', 'duration', 'error', 'error_type', 'local', 'memory', 'metrics', 's3', 'status', 'task_id', 'uri', '关联的任务ID', '关键时间节点记录（保持顺序）', '性能指标（CPU/内存/耗时等）', '执行上下文数据', '最终状态', '本次执行唯一ID', '输出产物引用']

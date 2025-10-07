@@ -1,0 +1,4 @@
+# file: c:\Users\10129\CodeBuddy\lite-mutil-task-manager\mutil_task\core\task.py
+# hypothesis_version: 6.138.15
+
+[0.0, 0.5, 1.0, 100, 500, '+00:00', ', ', 'None', 'Task', 'TaskPriority', 'TaskStatus', 'Z', '__main__', 'before', 'completed', 'created_at', 'datetime对象必须包含时区信息', 'example', 'id', 'is_retry', 'message', 'new_progress', 'new_status', 'old_progress', 'old_status', 'pending', 'priority', 'status', 'task', 'task_id', 'timestamp', 'title', 'updated_at', '任务创建时间(UTC)', '任务唯一标识符', '任务在队列中的位置', '任务当前状态', '任务最后更新时间(UTC)', '任务标题', '任务详细描述', '任务进度百分比(0.0-1.0)', '初始状态:', '失败任务', '尝试取消已完成任务:', '数据处理任务', '时间字符串必须包含时区信息', '更新时间不能早于创建时间', '测试任务', '状态机验证测试', '重试失败任务:', '队列中总任务数']

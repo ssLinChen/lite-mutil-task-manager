@@ -1,0 +1,4 @@
+# file: C:\Users\10129\AppData\Roaming\Python\Python313\site-packages\_pytest\setupplan.py
+# hypothesis_version: 6.138.15
+
+['--setup-plan', '--setupplan', 'debugconfig', 'store_true']

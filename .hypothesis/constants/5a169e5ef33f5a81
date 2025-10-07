@@ -1,0 +1,4 @@
+# file: c:\Users\10129\CodeBuddy\lite-mutil-task-manager\mutil_task\utils\queue_position_service.py
+# hypothesis_version: 6.138.15
+
+[0.2, 'active_tasks', 'cache_valid', 'completed_tasks', 'total_tasks']

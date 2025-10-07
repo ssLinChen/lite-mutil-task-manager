@@ -1,0 +1,4 @@
+# file: c:\Users\10129\CodeBuddy\lite-mutil-task-manager\mutil_task\utils\event_bus.py
+# hypothesis_version: 6.138.15
+
+['EventBus', 'task_cancelled', 'task_completed', 'task_created', 'task_failed', 'task_progress', 'task_status_changed', '事件总线已关闭']

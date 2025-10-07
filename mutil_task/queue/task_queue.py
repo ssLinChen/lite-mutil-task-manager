@@ -6,8 +6,28 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Optional, Dict, Tuple, Any
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
+
+@dataclass
+class TaskExecutionResult:
+    """任务执行结果封装类"""
+    task_id: str
+    task: Task
+    success: bool
+    result: Optional[Any] = None
+    error: Optional[Exception] = None
+    
+    @classmethod
+    def success(cls, task_id: str, task: Task, result: Any) -> 'TaskExecutionResult':
+        """创建成功执行结果"""
+        return cls(task_id=task_id, task=task, success=True, result=result)
+    
+    @classmethod
+    def failure(cls, task_id: str, task: Task, error: Exception) -> 'TaskExecutionResult':
+        """创建失败执行结果"""
+        return cls(task_id=task_id, task=task, success=False, error=error)
 
 class TaskQueue:
     def __init__(self, max_workers: int = 2):
@@ -49,106 +69,121 @@ class TaskQueue:
         logger.debug(f"任务 {task.id} 已入队，当前队列长度: {len(self._heap)}")
 
     def _run_task(self) -> None:
-        """执行队列中的任务 - 优化锁粒度版本"""
-        # 第一阶段：获取任务（最小化锁范围）
-        task_info = self._dequeue_task()
+        """执行队列中的任务 - 重构版本：职责拆分，逻辑清晰"""
+        # 1. 获取任务执行权（原子操作）
+        task_info = self._acquire_task_for_execution()
         if not task_info:
             return
             
         task_id, task = task_info
         
-        # 任务出队，失效位置缓存（锁外操作）
-        self.position_service.invalidate_cache()
-
+        # 2. 安全执行任务（无锁操作，隔离异常）
+        execution_result = self._execute_task_safely(task_id, task)
+        
+        # 3. 处理执行结果（原子操作）
+        self._process_execution_result(task_id, task, execution_result)
+        
+        # 4. 清理执行资源
+        self._cleanup_execution_resources(task_id)
+    
+    def _acquire_task_for_execution(self) -> Optional[Tuple[str, Task]]:
+        """原子化获取任务执行权"""
+        with self._lock:
+            return self._dequeue_and_validate_task()
+    
+    def _dequeue_and_validate_task(self) -> Optional[Tuple[str, Task]]:
+        """从队列中取出并验证任务（原子操作）"""
+        # 检查队列是否为空
+        if not self._heap:
+            return None
+            
+        # 获取优先级最高的任务（数值最小）
+        _, task_id, task = heapq.heappop(self._heap)
+        
+        # 从索引中移除
+        self._task_index.pop(task_id, None)
+        
+        # 检查任务是否已被取消
+        if task.status == TaskStatus.CANCELLED:
+            logger.debug(f"任务 {task_id} 已被取消，跳过执行")
+            return None
+            
+        # 检查优先级抢占
+        if self._heap and self._heap[0][0] < task.priority.value:
+            # 存在更高优先级任务，重新入队当前任务
+            heap_entry = (task.priority.value, task.id, task)
+            heapq.heappush(self._heap, heap_entry)
+            self._task_index[task_id] = heap_entry
+            return None
+        
+        # 原子化设置任务状态为RUNNING
+        self._active_tasks[task_id] = task
+        task.atomic_set_status(TaskStatus.RUNNING)
+        
+        return task_id, task
+    
+    def _execute_task_safely(self, task_id: str, task: Task) -> 'TaskExecutionResult':
+        """安全执行任务，隔离异常"""
         try:
-            # 在锁外执行实际任务（避免阻塞队列）
             logger.debug(f"开始执行任务 {task_id}")
             result = task.execute()
-            
-            # 第二阶段：更新完成状态（最小化锁范围）
-            self._handle_task_completion(task_id, task)
-                
+            return TaskExecutionResult.success(task_id, task, result)
         except Exception as e:
-            # 第三阶段：错误处理（最小化锁范围）
-            self._handle_task_failure(task_id, task, e)
-                    
-        finally:
-            # 第四阶段：清理资源（最小化锁范围）
-            self._cleanup_task(task_id)
+            return TaskExecutionResult.failure(task_id, task, e)
     
-    def _dequeue_task(self) -> Optional[Tuple[str, Task]]:
-        """从队列中取出任务（原子操作）"""
+    def _process_execution_result(self, task_id: str, task: Task, execution_result: 'TaskExecutionResult') -> None:
+        """原子化处理执行结果"""
         with self._lock:
-            # 检查队列是否为空
-            if not self._heap:
-                return None
-                
-            # 获取优先级最高的任务（数值最小）
-            _, task_id, task = heapq.heappop(self._heap)
+            if execution_result.success:
+                self._handle_successful_execution(task_id, task, execution_result)
+            else:
+                self._handle_failed_execution(task_id, task, execution_result)
+    
+    def _handle_successful_execution(self, task_id: str, task: Task, execution_result: 'TaskExecutionResult') -> None:
+        """处理成功执行的任务"""
+        # 检查任务是否已被取消
+        if task.status != TaskStatus.CANCELLED:
+            task.atomic_set_status(TaskStatus.COMPLETED)
+            task.progress = 1.0
+            self._completed_tasks[task_id] = task
+            logger.debug(f"任务 {task_id} 执行完成")
+        else:
+            logger.debug(f"任务 {task_id} 已被取消，跳过COMPLETED状态设置")
+    
+    def _handle_failed_execution(self, task_id: str, task: Task, execution_result: 'TaskExecutionResult') -> None:
+        """处理执行失败的任务"""
+        # 检查任务是否已被取消
+        if task.status != TaskStatus.CANCELLED:
+            task.atomic_set_status(TaskStatus.FAILED)
             
-            # 从索引中移除
-            self._task_index.pop(task_id, None)
-            
-            # 检查任务是否已被取消（新增原子检查）
-            if task.status == TaskStatus.CANCELLED:
-                logger.debug(f"任务 {task_id} 已被取消，跳过执行")
-                return None
+            # 简单的重试逻辑（最多重试3次）
+            if not hasattr(task, 'retry_count'):
+                task.retry_count = 0
                 
-            # 检查优先级抢占
-            if self._heap and self._heap[0][0] < task.priority.value:
-                # 存在更高优先级任务，重新入队当前任务
+            if task.retry_count < 3:
+                task.retry_count += 1
+                # 重新入队进行重试
+                task.atomic_set_status(TaskStatus.QUEUED)
                 heap_entry = (task.priority.value, task.id, task)
                 heapq.heappush(self._heap, heap_entry)
                 self._task_index[task_id] = heap_entry
-                return None
-            
-            # 原子化设置任务状态为RUNNING
-            self._active_tasks[task_id] = task
-            task.atomic_set_status(TaskStatus.RUNNING)
-            
-            return task_id, task
-    
-    def _handle_task_completion(self, task_id: str, task: Task) -> None:
-        """处理任务完成（原子操作）"""
-        with self._lock:
-            # 检查任务是否已被取消
-            if task.status != TaskStatus.CANCELLED:
-                task.atomic_set_status(TaskStatus.COMPLETED)
-                task.progress = 1.0
-                self._completed_tasks[task_id] = task
-                logger.debug(f"任务 {task_id} 执行完成")
+                logger.warning(f"任务 {task_id} 执行失败，重试第 {task.retry_count} 次: {execution_result.error}")
             else:
-                logger.debug(f"任务 {task_id} 已被取消，跳过COMPLETED状态设置")
+                # 超过重试次数，记录最终失败
+                logger.error(f"任务 {task_id} 执行失败，已达到最大重试次数: {execution_result.error}")
+        else:
+            logger.debug(f"任务 {task_id} 已被取消，跳过FAILED状态设置")
     
-    def _handle_task_failure(self, task_id: str, task: Task, error: Exception) -> None:
-        """处理任务失败（原子操作）"""
-        with self._lock:
-            # 检查任务是否已被取消
-            if task.status != TaskStatus.CANCELLED:
-                task.atomic_set_status(TaskStatus.FAILED)
-                
-                # 简单的重试逻辑（最多重试3次）
-                if not hasattr(task, 'retry_count'):
-                    task.retry_count = 0
-                    
-                if task.retry_count < 3:
-                    task.retry_count += 1
-                    # 重新入队进行重试
-                    task.atomic_set_status(TaskStatus.QUEUED)
-                    heap_entry = (task.priority.value, task.id, task)
-                    heapq.heappush(self._heap, heap_entry)
-                    self._task_index[task_id] = heap_entry
-                    logger.warning(f"任务 {task_id} 执行失败，重试第 {task.retry_count} 次: {error}")
-                else:
-                    # 超过重试次数，记录最终失败
-                    logger.error(f"任务 {task_id} 执行失败，已达到最大重试次数: {error}")
-            else:
-                logger.debug(f"任务 {task_id} 已被取消，跳过FAILED状态设置")
-    
-    def _cleanup_task(self, task_id: str) -> None:
-        """清理任务资源（原子操作）"""
+    def _cleanup_execution_resources(self, task_id: str) -> None:
+        """清理执行资源"""
+        # 失效位置缓存
+        self.position_service.invalidate_cache()
+        
+        # 清理活动任务记录
         with self._lock:
             self._active_tasks.pop(task_id, None)
+    
+
 
     def cancel_task(self, task_id: str) -> bool:
         """
