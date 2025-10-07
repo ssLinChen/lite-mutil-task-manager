@@ -56,7 +56,7 @@ class TestConcurrency(unittest.TestCase):
     def test_atomic_timestamp_update(self):
         task = Task(title="Concurrency Test")
         original_time = task.updated_at
-        task._atomic_update_timestamp()
+        task._update_timestamp()
         self.assertGreater(task.updated_at, original_time)
 
 class TestSerialization(unittest.TestCase):

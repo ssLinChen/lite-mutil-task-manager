@@ -117,11 +117,6 @@ class Task(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
         arbitrary_types_allowed=True,
-        json_encoders={
-            datetime: lambda dt: dt.isoformat(),
-            TaskStatus: lambda status: status.name.lower(),
-            TaskPriority: lambda priority: priority.value
-        },
         json_schema_extra={
             "example": {
                 "id": "task_3fa85f6457174562b3fc2c963f66afa6",
@@ -130,6 +125,20 @@ class Task(BaseModel):
             }
         }
     )
+    
+    def model_dump(self, **kwargs) -> dict:
+        """自定义序列化方法"""
+        data = super().model_dump(**kwargs)
+        # 自定义序列化格式
+        if 'status' in data:
+            data['status'] = self.status.name.lower()
+        if 'priority' in data:
+            data['priority'] = self.priority.value
+        if 'created_at' in data:
+            data['created_at'] = self.created_at.isoformat()
+        if 'updated_at' in data:
+            data['updated_at'] = self.updated_at.isoformat()
+        return data
     
     # ==================== 数据验证器 ====================
     # Pydantic验证器，确保数据完整性和一致性
@@ -298,6 +307,26 @@ class Task(BaseModel):
             executor: 实现TaskExecutor协议的执行器对象
         """
         self.executor = executor
+    
+    def atomic_set_status(self, new_status: TaskStatus, validate: bool = True) -> bool:
+        """
+        原子化状态设置方法 - 线程安全的状态变更
+        
+        Args:
+            new_status: 目标状态
+            validate: 是否进行状态转移验证
+            
+        Returns:
+            bool: 状态变更是否成功
+        """
+        try:
+            if validate:
+                self._validate_transition(self.status, new_status)
+            self._set_status(new_status)
+            return True
+        except ValueError as e:
+            logger.warning(f"原子状态变更失败: {str(e)}")
+            return False
     
     # ==================== 内部支持层 ====================
     # 私有方法，支持业务操作层的实现

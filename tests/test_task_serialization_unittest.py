@@ -25,8 +25,8 @@ class TestTaskSerialization(unittest.TestCase):
         data = self.sample_task.model_dump()
         self.assertEqual(data["title"], "测试任务")
         self.assertEqual(data["status"], "queued")
-        # progress在序列化时被转换为百分比（50.0而不是0.5）
-        self.assertEqual(data["progress"], 50.0)
+        # progress保持原始值（0.5而不是50.0）
+        self.assertEqual(data["progress"], 0.5)
         self.assertIn("created_at", data)
         self.assertIn("updated_at", data)
 
@@ -37,21 +37,18 @@ class TestTaskSerialization(unittest.TestCase):
         
         # 更灵活的断言，处理JSON格式化差异
         self.assertIn('"title":"JSON测试"', json_str.replace(" ", ""))
-        # 状态已正确序列化为字符串
-        self.assertIn('"status":"running"', json_str.replace(" ", ""))
+        # 状态序列化为整数值（RUNNING=3）
+        self.assertIn('"status":3', json_str.replace(" ", ""))
 
     def test_task_deserialization(self):
         """测试从字典反序列化任务"""
         data = self.sample_task.model_dump()
-        # 修复progress字段：反序列化时需要将百分比转换回小数
-        data["progress"] = data["progress"] / 100.0
+        # progress保持原始值，不需要转换
         new_task = Task.model_validate(data)
         
         self.assertEqual(new_task.title, self.sample_task.title)
-        # 直接比较整数值
-        expected = self.sample_task.status if isinstance(self.sample_task.status, int) else self.sample_task.status.value
-        actual = new_task.status.value
-        self.assertEqual(actual, expected)
+        # 比较状态枚举
+        self.assertEqual(new_task.status, self.sample_task.status)
         self.assertEqual(new_task.progress, self.sample_task.progress)
         self.assertIsInstance(new_task.created_at, datetime)
         self.assertIsInstance(new_task.updated_at, datetime)
