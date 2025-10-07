@@ -66,10 +66,18 @@ class TaskQueue:
     
     def _handle_queue_timeout(self, task_id: str, task: Task):
         """处理队列超时任务"""
-        if task.atomic_set_status(TaskStatus.FAILED):
-            task.timeout_reason = f"队列等待超时: {task.queue_timeout}秒"
-            self._remove_from_heap(task_id)
-            logger.warning(f"任务 {task_id} 因队列等待超时而失败")
+        with self._lock:
+            if task.status == TaskStatus.QUEUED:  # 只处理仍在队列中的任务
+                task.timeout_reason = f"队列等待超时: {task.queue_timeout}秒"
+                task._set_status(TaskStatus.FAILED)  # 直接设置为FAILED状态
+                # 从堆中移除但不尝试取消
+                if task_id in self._task_index:
+                    del self._task_index[task_id]
+                    self._heap = [entry for entry in self._heap if entry[1] != task_id]
+                    heapq.heapify(self._heap)
+                logger.warning(f"任务 {task_id} 因队列等待超时而失败")
+
+
 
     def enqueue(self, task: Task) -> None:
         """
@@ -271,17 +279,19 @@ class TaskQueue:
         # 获取任务对象
         _, _, task = self._task_index[task_id]
         
-        # 标记任务为已取消
-        task.cancel()
+        # 仅当任务不是FAILED状态时才尝试取消
+        if task.status != TaskStatus.FAILED:
+            task.cancel()
         
         # 从索引中移除
         del self._task_index[task_id]
         
-        # 重建堆（移除已取消的任务）
+        # 重建堆
         self._heap = [entry for entry in self._heap if entry[1] != task_id]
         heapq.heapify(self._heap)
         
         return True
+
 
     def get_task_status(self, task_id: str) -> Optional[TaskStatus]:
         """

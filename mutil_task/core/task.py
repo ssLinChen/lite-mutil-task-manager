@@ -123,6 +123,10 @@ class Task(BaseModel):
         None, ge=1,
         description="任务执行超时时间(秒)"
     )
+    timeout_reason: Optional[str] = Field(
+        None,
+        description="超时原因描述"
+    )
     
     # 执行器配置（不参与序列化）
     executor: Optional[Any] = Field(default=None, exclude=True)
