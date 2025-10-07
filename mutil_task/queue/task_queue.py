@@ -164,26 +164,49 @@ class TaskQueue:
     
     def _execute_task_safely(self, task_id: str, task: Task) -> 'TaskExecutionResult':
         """安全执行任务，隔离异常"""
+        import time
         try:
-            logger.debug(f"开始执行任务 {task_id}")
+            start_time = time.time()
+            logger.debug(f"开始执行任务 {task_id} (超时设置: {task.execution_timeout or '无'}秒)")
             
             if task.execution_timeout:
                 with ThreadPoolExecutor(max_workers=1) as executor:
                     future = executor.submit(task.execute)
-                    result = future.result(timeout=task.execution_timeout)
-                    return TaskExecutionResult.success(task_id, task, result)
+                    try:
+                        logger.debug(f"等待任务完成，超时时间: {task.execution_timeout}秒")
+                        result = future.result(timeout=task.execution_timeout)
+                        elapsed = time.time() - start_time
+                        logger.debug(f"任务 {task_id} 正常完成，耗时: {elapsed:.2f}秒")
+                        return TaskExecutionResult.success(task_id, task, result)
+                    except TimeoutError:
+                        elapsed = time.time() - start_time
+                        logger.warning(f"任务 {task_id} 执行超时，已运行: {elapsed:.2f}秒 (设置超时: {task.execution_timeout}秒)")
+                        if hasattr(task.executor, 'cancel'):
+                            task.executor.cancel()  # 调用执行器的中断方法
+                        future.cancel()  # 双重保险
+                        logger.debug(f"已发送中断信号到任务 {task_id}")
+                        raise
+  
             else:
                 result = task.execute()
+                elapsed = time.time() - start_time
+                logger.debug(f"任务 {task_id} 无超时完成，耗时: {elapsed:.2f}秒")
                 return TaskExecutionResult.success(task_id, task, result)
                 
         except TimeoutError:
+            elapsed = time.time() - start_time
+            logger.error(f"任务 {task_id} 超时处理完成，总耗时: {elapsed:.2f}秒")
             return TaskExecutionResult.failure(
                 task_id, 
                 task, 
                 TimeoutError(f"任务执行超时: {task.execution_timeout}秒")
             )
         except Exception as e:
+            elapsed = time.time() - start_time
+            logger.error(f"任务 {task_id} 执行异常，耗时: {elapsed:.2f}秒，错误: {str(e)}")
             return TaskExecutionResult.failure(task_id, task, e)
+
+
     
     def _process_execution_result(self, task_id: str, task: Task, execution_result: 'TaskExecutionResult') -> None:
         """原子化处理执行结果"""
@@ -206,27 +229,32 @@ class TaskQueue:
     
     def _handle_failed_execution(self, task_id: str, task: Task, execution_result: 'TaskExecutionResult') -> None:
         """处理执行失败的任务"""
-        # 检查任务是否已被取消
-        if task.status != TaskStatus.CANCELLED:
-            task.atomic_set_status(TaskStatus.FAILED)
-            
-            # 简单的重试逻辑（最多重试3次）
-            if not hasattr(task, 'retry_count'):
-                task.retry_count = 0
+        with self._lock:
+            # 检查任务是否已被取消
+            if task.status != TaskStatus.CANCELLED:
+                task.atomic_set_status(TaskStatus.FAILED)
                 
-            if task.retry_count < 3:
-                task.retry_count += 1
-                # 重新入队进行重试
-                task.atomic_set_status(TaskStatus.QUEUED)
-                heap_entry = (task.priority.value, task.id, task)
-                heapq.heappush(self._heap, heap_entry)
-                self._task_index[task_id] = heap_entry
-                logger.warning(f"任务 {task_id} 执行失败，重试第 {task.retry_count} 次: {execution_result.error}")
+                # 简单的重试逻辑（最多重试3次）
+                if not hasattr(task, 'retry_count'):
+                    task.retry_count = 0
+                    
+                if task.retry_count < 3:
+                    task.retry_count += 1
+                    # 重新入队进行重试
+                    task.atomic_set_status(TaskStatus.QUEUED)
+                    heap_entry = (task.priority.value, task.id, task)
+                    heapq.heappush(self._heap, heap_entry)
+                    self._task_index[task_id] = heap_entry
+                    logger.warning(f"任务 {task_id} 执行失败，重试第 {task.retry_count} 次: {execution_result.error}")
+                else:
+                    # 超过重试次数，记录最终失败
+                    logger.error(f"任务 {task_id} 执行失败，已达到最大重试次数: {execution_result.error}")
+                    # 立即从活动任务中移除
+                    self._active_tasks.pop(task_id, None)
             else:
-                # 超过重试次数，记录最终失败
-                logger.error(f"任务 {task_id} 执行失败，已达到最大重试次数: {execution_result.error}")
-        else:
-            logger.debug(f"任务 {task_id} 已被取消，跳过FAILED状态设置")
+                logger.debug(f"任务 {task_id} 已被取消，跳过FAILED状态设置")
+                self._active_tasks.pop(task_id, None)
+
     
     def _cleanup_execution_resources(self, task_id: str) -> None:
         """清理执行资源"""

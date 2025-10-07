@@ -40,3 +40,26 @@
 2025-10-07 19:27:44,810 - INFO: 开始推送到远程仓库...
 2025-10-07 19:27:44,810 - INFO: 使用 --set-upstream 选项推送分支 main
 2025-10-07 19:27:50,176 - INFO: 同步成功完成
+2025-10-08 00:03:27,775 - INFO: Git仓库初始化成功
+2025-10-08 00:03:27,776 - INFO: 配置的远程仓库URL: git@github.com:ssLinChen/lite-mutil-task-manager.git
+2025-10-08 00:03:27,776 - INFO: 测试SSH连接到: github.com
+2025-10-08 00:03:31,442 - INFO: SSH连接测试成功: github.com
+2025-10-08 00:03:31,446 - INFO: 检查仓库是否存在: ssLinChen/lite-mutil-task-manager 在 github.com
+2025-10-08 00:03:44,219 - WARNING: 检查仓库存在性异常: Command '['git', 'ls-remote', 'git@github.com:ssLinChen/lite-mutil-task-manager.git', 'HEAD']' timed out after 10 seconds
+2025-10-08 00:03:44,219 - WARNING: 远程仓库不存在或无法访问
+2025-10-08 00:03:44,219 - INFO: 请确认仓库URL是否正确，并且您有权限访问该仓库
+2025-10-08 00:03:44,223 - INFO: Git身份设置为: tutu <y80200156@mail.ecust.edu.cn>
+2025-10-08 00:03:44,262 - INFO: 已添加所有更改到暂存区
+2025-10-08 00:03:44,860 - INFO: 已提交更改: 修复任务队列超时处理逻辑，完善测试用例
+2025-10-08 00:03:44,863 - INFO: 远程仓库URL已正确设置: git@github.com:ssLinChen/lite-mutil-task-manager.git
+2025-10-08 00:03:44,863 - INFO: 使用分支: main
+2025-10-08 00:03:44,922 - INFO: 本地分支 main 已存在
+2025-10-08 00:03:44,922 - INFO: 拉取远程仓库更改...
+2025-10-08 00:03:49,707 - INFO: 远程分支 main 存在，执行拉取操作
+2025-10-08 00:03:53,862 - INFO: 成功拉取远程更改
+2025-10-08 00:03:53,862 - INFO: 开始推送到远程仓库...
+2025-10-08 00:03:53,862 - INFO: 使用 --set-upstream 选项推送分支 main
+2025-10-08 00:03:57,936 - INFO: 同步成功完成
+2025-10-08 00:04:21,069 - INFO: Git仓库初始化成功
+2025-10-08 00:04:21,069 - INFO: 配置的远程仓库URL: git@github.com:ssLinChen/lite-mutil-task-manager.git
+2025-10-08 00:04:21,070 - INFO: 测试SSH连接到: github.com

@@ -17,9 +17,9 @@ from pydantic import (
 
 logger = logging.getLogger(__name__)
 
-# ============================================================================
+# ======
 # 枚举定义层 - 定义任务状态和优先级枚举
-# ============================================================================
+# ======
 
 class TaskStatus(Enum):
     """任务状态枚举 - 定义任务的6种生命周期状态"""
@@ -67,9 +67,9 @@ class TaskExecutor(Protocol):
         pass
 
 
-# ============================================================================
+# ======
 # Task类 - 任务数据模型和业务逻辑
-# ============================================================================
+# ======
 
 class Task(BaseModel):
     """
@@ -77,7 +77,7 @@ class Task(BaseModel):
     采用三层架构：数据属性层、业务操作层、内部支持层
     """
     
-    # ==================== 数据属性层 ====================
+    # ====== 数据属性层 ======
     # 定义任务的所有数据字段和验证规则
     
     # 基础标识信息
@@ -158,7 +158,7 @@ class Task(BaseModel):
             data['updated_at'] = self.updated_at.isoformat()
         return data
     
-    # ==================== 数据验证器 ====================
+    # ====== 数据验证器 ======
     # Pydantic验证器，确保数据完整性和一致性
     
     @field_validator('status', mode='before')
@@ -221,7 +221,7 @@ class Task(BaseModel):
             f"优先级需为整数/枚举/数字字符串，收到: {type(value)}"
         )
     
-    # ==================== 业务操作层 ====================
+    # ====== 业务操作层 ======
     # 公开的业务方法，供外部调用
     
     def cancel(self) -> bool:
@@ -346,7 +346,7 @@ class Task(BaseModel):
             logger.warning(f"原子状态变更失败: {str(e)}")
             return False
     
-    # ==================== 内部支持层 ====================
+    # ====== 内部支持层 ======
     # 私有方法，支持业务操作层的实现
     
     def _set_status(self, new_status: TaskStatus) -> None:
@@ -410,7 +410,7 @@ class Task(BaseModel):
 
     def _default_execute(self) -> Any:
         """
-        默认执行逻辑 - 保持向后兼容的简单实现
+        默认执行逻辑 - 带进度更新的实现
         
         Returns:
             dict: 执行结果
@@ -422,21 +422,29 @@ class Task(BaseModel):
         if self.status != TaskStatus.RUNNING:
             raise ValueError(f"任务必须在RUNNING状态才能执行，当前状态: {self.status.name}")
         
-        # 最简单的执行逻辑 - 模拟工作
         import time
-        time.sleep(2)  # 固定2秒模拟
-        
-        # 返回简单结果
+        steps = 10  # 将2秒执行分成10步
+        for i in range(steps):
+            time.sleep(0.2)
+            self.update_progress((i+1)/steps)
+            if self.status == TaskStatus.CANCELLED:
+                return {
+                    "task_id": self.id,
+                    "status": "cancelled",
+                    "message": "任务已取消"
+                }
+                
         return {
             "task_id": self.id,
-            "status": "completed", 
+            "status": "completed",
             "message": f"任务 {self.title} 执行完成"
         }
 
 
-# ============================================================================
+
+# ======
 # 示例使用和测试代码
-# ============================================================================
+# ======
 
 if __name__ == "__main__":
     """

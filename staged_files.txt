@@ -1,6 +1,8 @@
+CHANGELOG.md
 examples/task_queue_mvp.py
 mutil_task/core/__pycache__/task.cpython-313.pyc
 mutil_task/core/task.py
 mutil_task/queue/__pycache__/task_queue.cpython-313.pyc
 mutil_task/queue/task_queue.py
-versions/v0.0.4.md
+sync.log
+versions/v0.0.5.md
