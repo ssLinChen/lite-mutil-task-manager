@@ -30,8 +30,6 @@ class TimedTaskExecutor(TaskExecutor):
         """外部调用以中断任务"""
         self._stop_event.set()
 
-
-
 from mutil_task.utils.task_ui import render_full_panel
 import time
 
@@ -82,8 +80,6 @@ def run_mvp():
             description="正常任务（无超时）"
         )
     ]
-
-
 
 
     # 入队逻辑
@@ -164,11 +160,10 @@ def run_mvp():
             if render_time < 0.5:
                 time.sleep(0.5 - render_time)
             
+            active_ids = [str(t.id) for t in queue._active_tasks.values()]
             print(f"当前状态: {len(queue._heap)}等待 | {active_count}执行中 | "
-                  f"已完成: {len(queue._completed_tasks)}")
+                  f"已完成: {len(queue._completed_tasks)} 活动中: {len(queue._active_tasks)} [IDs: {', '.join(active_ids)}]")
 
-
-    
     # 最终结果统计
     print("\n" + "=" * 50)
     print(f"所有任务完成! 总耗时: {time.time()-start_time:.2f}秒")

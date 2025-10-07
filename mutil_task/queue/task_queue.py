@@ -233,27 +233,9 @@ class TaskQueue:
             # 检查任务是否已被取消
             if task.status != TaskStatus.CANCELLED:
                 task.atomic_set_status(TaskStatus.FAILED)
-                
-                # 简单的重试逻辑（最多重试3次）
-                if not hasattr(task, 'retry_count'):
-                    task.retry_count = 0
-                    
-                if task.retry_count < 3:
-                    task.retry_count += 1
-                    # 重新入队进行重试
-                    task.atomic_set_status(TaskStatus.QUEUED)
-                    heap_entry = (task.priority.value, task.id, task)
-                    heapq.heappush(self._heap, heap_entry)
-                    self._task_index[task_id] = heap_entry
-                    logger.warning(f"任务 {task_id} 执行失败，重试第 {task.retry_count} 次: {execution_result.error}")
-                else:
-                    # 超过重试次数，记录最终失败
-                    logger.error(f"任务 {task_id} 执行失败，已达到最大重试次数: {execution_result.error}")
-                    # 立即从活动任务中移除
-                    self._active_tasks.pop(task_id, None)
-            else:
-                logger.debug(f"任务 {task_id} 已被取消，跳过FAILED状态设置")
-                self._active_tasks.pop(task_id, None)
+                logger.error(f"任务 {task_id} 执行失败: {execution_result.error}")
+            # 无论是否取消，都从活动任务中移除
+            self._active_tasks.pop(task_id, None)
 
     
     def _cleanup_execution_resources(self, task_id: str) -> None:
