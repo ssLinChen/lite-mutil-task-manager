@@ -3,8 +3,9 @@ from mutil_task.utils.queue_position_service import QueuePositionService
 import heapq
 import threading
 import logging
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from datetime import datetime, timezone
+import time
 from typing import Optional, Dict, Tuple, Any
 from dataclasses import dataclass
 
@@ -39,6 +40,36 @@ class TaskQueue:
         self._completed_tasks: Dict[str, Task] = {}
         self._task_index: Dict[str, Tuple[int, str, Task]] = {}  # 任务索引：task_id -> heap_entry
         self.position_service = QueuePositionService(self)
+        
+        # 启动超时监控线程
+        self._timeout_scanner = threading.Thread(
+            target=self._scan_timeouts,
+            daemon=True
+        )
+        self._timeout_scanner.start()
+        
+    def _scan_timeouts(self):
+        """定期扫描超时任务"""
+        while True:
+            time.sleep(1)  # 每秒扫描一次
+            self._scan_queue_timeouts()
+            
+    def _scan_queue_timeouts(self):
+        """扫描队列中的超时任务"""
+        with self._lock:
+            current_time = datetime.now(timezone.utc)
+            for _, task_id, task in self._heap:
+                if task.queue_timeout and task.queue_started_at:
+                    elapsed = (current_time - task.queue_started_at).total_seconds()
+                    if elapsed > task.queue_timeout:
+                        self._handle_queue_timeout(task_id, task)
+    
+    def _handle_queue_timeout(self, task_id: str, task: Task):
+        """处理队列超时任务"""
+        if task.atomic_set_status(TaskStatus.FAILED):
+            task.timeout_reason = f"队列等待超时: {task.queue_timeout}秒"
+            self._remove_from_heap(task_id)
+            logger.warning(f"任务 {task_id} 因队列等待超时而失败")
 
     def enqueue(self, task: Task) -> None:
         """
@@ -50,9 +81,10 @@ class TaskQueue:
             if task.status != TaskStatus.PENDING:
                 raise ValueError(f"只有PENDING状态的任务可以入队，当前状态: {task.status.name}")
             
-            # 更新任务状态
+            # 更新任务状态并记录入队时间
             task.status = TaskStatus.QUEUED
             task.updated_at = datetime.now(timezone.utc)
+            task.queue_started_at = datetime.now(timezone.utc)
             
             # 存入优先队列（数值越小优先级越高）
             heap_entry = (task.priority.value, task.id, task)
@@ -126,8 +158,22 @@ class TaskQueue:
         """安全执行任务，隔离异常"""
         try:
             logger.debug(f"开始执行任务 {task_id}")
-            result = task.execute()
-            return TaskExecutionResult.success(task_id, task, result)
+            
+            if task.execution_timeout:
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(task.execute)
+                    result = future.result(timeout=task.execution_timeout)
+                    return TaskExecutionResult.success(task_id, task, result)
+            else:
+                result = task.execute()
+                return TaskExecutionResult.success(task_id, task, result)
+                
+        except TimeoutError:
+            return TaskExecutionResult.failure(
+                task_id, 
+                task, 
+                TimeoutError(f"任务执行超时: {task.execution_timeout}秒")
+            )
         except Exception as e:
             return TaskExecutionResult.failure(task_id, task, e)
     

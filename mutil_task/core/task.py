@@ -109,6 +109,20 @@ class Task(BaseModel):
         default_factory=lambda: datetime.now(timezone.utc),
         description="任务最后更新时间(UTC)"
     )
+    queue_started_at: Optional[datetime] = Field(
+        None,
+        description="任务进入队列时间(UTC)"
+    )
+    
+    # 超时配置
+    queue_timeout: Optional[int] = Field(
+        None, ge=1,
+        description="队列等待超时时间(秒)"
+    )
+    execution_timeout: Optional[int] = Field(
+        None, ge=1,
+        description="任务执行超时时间(秒)"
+    )
     
     # 执行器配置（不参与序列化）
     executor: Optional[Any] = Field(default=None, exclude=True)
@@ -376,7 +390,7 @@ class Task(BaseModel):
         """
         TRANSITION_MATRIX = {
             TaskStatus.PENDING: {TaskStatus.QUEUED, TaskStatus.CANCELLED},
-            TaskStatus.QUEUED: {TaskStatus.RUNNING, TaskStatus.CANCELLED},
+            TaskStatus.QUEUED: {TaskStatus.RUNNING, TaskStatus.CANCELLED, TaskStatus.FAILED},
             TaskStatus.RUNNING: {TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED},
             TaskStatus.FAILED: {TaskStatus.QUEUED},
             TaskStatus.COMPLETED: set(),
